@@ -6,13 +6,11 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 public class Util {
     //Configuration files
-    private static FileConfiguration fileConfiguration;
     private static Plugin plugin;
 
     //Player management
@@ -44,21 +42,18 @@ public class Util {
     private static long refreshRate;
 
     /** Loads contents of config.yml into memory. */
-    public static void readConfig(FileConfiguration fileConfiguration, Plugin plugin) {
-        Util.fileConfiguration = fileConfiguration;
-        Util.plugin = plugin;
+    public static void readConfig(Plugin plu) {
+        Util.plugin = plu;
 
-        Util.refreshRate = fileConfiguration.getLong("refreshRate");
-
-
-        List<String> tmp = fileConfiguration.getStringList("brightBiomes");
+        Util.refreshRate = plu.getConfig().getLong("refreshRate");
+        List<String> tmp = plu.getConfig().getStringList("brightBiomes");
         brightBiomes = new HashMap<>();
         for (String cur : tmp){
             brightBiomes.put(cur, null);
         }
 
         //Initialize string list
-        Util.cfgStringList = fileConfiguration.getStringList("playerConfig");
+        Util.cfgStringList = plu.getConfig().getStringList("playerConfig");
 
         //UUID, coordEnabled, timeEnabled, tickEnabled, villagerMode
         Util.playerHash = new HashMap<>();
@@ -82,7 +77,7 @@ public class Util {
         cfgStringList.add(player.getUniqueId().toString() + ", " + DEFAULT_CFG[0] + ", " + DEFAULT_CFG[1] + ", " + DEFAULT_CFG[2]);
 
         //Saves changes
-        fileConfiguration.set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig", cfgStringList);
         plugin.saveConfig();
 
         return "InfoHUD is now " + (Util.isOnList(player) ? "enabled" : "disabled") + ".";
@@ -95,7 +90,7 @@ public class Util {
         cfgStringList.remove(player.getUniqueId().toString() + ", " + removedCFG[0] + ", " + removedCFG[1] + ", " + removedCFG[2]);
 
         //Saves changes
-        fileConfiguration.set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig", cfgStringList);
         plugin.saveConfig();
 
         return "InfoHUD is now " + (Util.isOnList(player) ? "enabled" : "disabled") + ".";
@@ -105,7 +100,7 @@ public class Util {
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[0] = newMode;
         //Saves changes
-        fileConfiguration.set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig", cfgStringList);
         plugin.saveConfig();
         return "Coordinates display set to: " + COORDS_OPTIONS[newMode];
     }
@@ -114,7 +109,7 @@ public class Util {
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[1] = newMode;
         //Saves changes
-        fileConfiguration.set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig", cfgStringList);
         plugin.saveConfig();
         return "Time display set to: " + TIME_OPTIONS[newMode];
     }
@@ -123,7 +118,7 @@ public class Util {
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[2] = newMode;
         //Saves changes
-        fileConfiguration.set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig", cfgStringList);
         plugin.saveConfig();
         return "Time display set to: " + DARK_OPTIONS[newMode];
     }
@@ -219,7 +214,7 @@ public class Util {
     static String changeUpdateRate(long newRate) {
         if (newRate == 0 || newRate > 40) return "Number must be between 1 and 40 ticks";
         refreshRate = newRate;
-        fileConfiguration.set("refreshRate", refreshRate);
+        plugin.getConfig().set("refreshRate", refreshRate);
         plugin.saveConfig();
         return "Refresh rate set to " + newRate;
     }

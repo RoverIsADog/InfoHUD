@@ -9,19 +9,24 @@ import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.scheduler.BukkitTask;
 
 /** Helper class. */
 public class Util {
-    //Configuration files
-    private static Plugin plugin;
+    //Main plugin thread
+    static BukkitTask task;
+
+    //Main Plugin class instance
+    private static InfoHUD plugin;
 
     //Player management
     private static HashMap<UUID, int[]> playerHash;
+    static final int[] DEFAULT_CFG = new int[]{1, 2, 2}; //[coordsMode, timeMode, darkModeCFG]
+
     static HashMap<Biome, Object> brightBiomes;
 
     //Default values
     static final String CMD_NAME = "infohud";
-    static final int[] DEFAULT_CFG = new int[]{1, 2, 2}; //[coordsMode, timeMode, darkModeCFG]
     static final String[] COORDS_OPTIONS = new String[]{"disabled", "enabled"};
     static final String[] TIME_OPTIONS = new String[]{"disabled", "ticks", "24 hours clock", "villager schedule"};
     static final String[] DARK_OPTIONS = new String[]{"disabled", "enabled", "auto"};
@@ -29,37 +34,42 @@ public class Util {
     //Shortcuts
     static final String PERM_USE = "infohud.use";
     static final String PERM_ADMIN = "infohud.admin";
-    static String RES = ChatColor.RESET.toString();
-    static String YEL = ChatColor.YELLOW.toString();
-    static String WHI = ChatColor.WHITE.toString();
-    static String GLD = ChatColor.GOLD.toString();
-    static String BLU = ChatColor.BLUE.toString();
-    static String DAQA = ChatColor.DARK_AQUA.toString();
-    static String AQA = ChatColor.AQUA.toString();
-    static String RED = ChatColor.RED.toString();
-    static String GRA = ChatColor.GRAY.toString();
-    static String DBLU = ChatColor.DARK_BLUE.toString();
+
+    static final String HIGHLIGHT = ChatColor.YELLOW.toString();
+    static final String SIGNATURE = ChatColor.BLUE.toString();
+    static final String ERROR = ChatColor.RED.toString();
+
+    static final String RES = ChatColor.RESET.toString();
+    static final String WHI = ChatColor.WHITE.toString();
+    static final String GLD = ChatColor.GOLD.toString();
+    static final String DAQA = ChatColor.DARK_AQUA.toString();
+    static final String AQA = ChatColor.AQUA.toString();
+    static final String GRA = ChatColor.GRAY.toString();
+    static final String DBLU = ChatColor.DARK_BLUE.toString();
 
     private static long refreshRate;
 
-    /** Loads disk contents of config.yml into memory. */
-    public static void readConfig(Plugin plu) {
-        Util.plugin = plu;
+    /** Loads disk contents of config.yml into memory. Returns false if an exception is found. */
+    public static boolean loadConfig(Plugin plu) {
+        try {
+            Util.plugin = (InfoHUD) plu;
 
-        Util.refreshRate = plu.getConfig().getLong("refreshRate");
+            Util.refreshRate = plu.getConfig().getLong("refreshRate");
 
-        //[coordinatesMode, timeMode, darkMode]
-        Util.playerHash = new HashMap<>();
-        for (String player : Objects.requireNonNull(plu.getConfig().getConfigurationSection("playerConfig")).getKeys(false)) {
-            Util.playerHash.put(UUID.fromString(player), plu.getConfig().getIntegerList("playerConfig." + player).stream().mapToInt(i->i).toArray());
+            //[coordinatesMode, timeMode, darkMode]
+            Util.playerHash = new HashMap<>();
+            for (String player : Objects.requireNonNull(plu.getConfig().getConfigurationSection("playerConfig")).getKeys(false)) {
+                Util.playerHash.put(UUID.fromString(player), plu.getConfig().getIntegerList("playerConfig." + player).stream().mapToInt(i->i).toArray());
+            }
+
+            Util.brightBiomes = new HashMap<>();
+            for (String cur : plu.getConfig().getStringList("brightBiomes")){
+                Util.brightBiomes.put(Biome.valueOf(cur), null);
+            }
+            return true;
+        } catch (Exception e){
+            return false;
         }
-
-        Util.brightBiomes = new HashMap<>();
-        for (String cur : plu.getConfig().getStringList("brightBiomes")){
-            Util.brightBiomes.put(Biome.valueOf(cur), null);
-        }
-
-        plu.saveConfig();
 
     }
 
@@ -71,13 +81,13 @@ public class Util {
     /** Saves player UUID into player list. */
     static String savePlayer(Player player) {
         //Save into hashmap and string list
-        playerHash.put(player.getUniqueId(), DEFAULT_CFG);
+        playerHash.put(player.getUniqueId(), DEFAULT_CFG.clone());
 
         //Saves changes
         plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
         plugin.saveConfig();
 
-        return "InfoHUD is now " + (Util.isOnList(player) ? "enabled" : "disabled") + ".";
+        return "InfoHUD is now " + HIGHLIGHT + (Util.isOnList(player) ? "enabled" : "disabled") + RES + ".";
     }
 
     /** Removes player UUID from player list. */
@@ -89,34 +99,37 @@ public class Util {
         plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), null);
         plugin.saveConfig();
 
-        return "InfoHUD is now " + (Util.isOnList(player) ? "enabled" : "disabled") + ".";
+        return "InfoHUD is now " + HIGHLIGHT + (Util.isOnList(player) ? "enabled" : "disabled") + RES + ".";
     }
 
+    /** Changes coordinates mode and returns new mode. */
     static String setCoordMode(Player p, int newMode){
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[0] = newMode;
         //Saves changes
         plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
         plugin.saveConfig();
-        return "Coordinates display set to: " + COORDS_OPTIONS[newMode];
+        return "Coordinates display set to: " + HIGHLIGHT + COORDS_OPTIONS[newMode] + RES;
     }
 
+    /** Changes time mode and returns new mode. */
     static String setTimeMode(Player p, int newMode){
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[1] = newMode;
         //Saves changes
         plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
         plugin.saveConfig();
-        return "Time display set to: " + TIME_OPTIONS[newMode];
+        return "Time display set to: " + HIGHLIGHT + TIME_OPTIONS[newMode] + RES;
     }
 
+    /** Changes dark mode settings and returns new settings. */
     static String setDarkMode(Player p, int newMode){
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[2] = newMode;
         //Saves changes
         plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
         plugin.saveConfig();
-        return "Time display set to: " + DARK_OPTIONS[newMode];
+        return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES;
     }
 
     /** Returns string of player position. */
@@ -138,7 +151,7 @@ public class Util {
     }
 
     /** Returns current villager schedule and time before change. */
-    static String getVillagerTimeLeft(long time, String col1, String col2){
+    static String getVillagerTimeLeft(long time, String col1, String col2) {
         //Sleeping 12000 - 0
         if (time > 12000L){
             long remaining = 12000L - time + 12000L;
@@ -168,8 +181,7 @@ public class Util {
 
     /** Calculates direction the player is facing and returns corresponding string. */
     static String getPlayerDirection(Player player) {
-        //-180: Leaning left
-        //+180: Leaning right
+        //-180: Leaning left | +180: Leaning right
         float yaw = player.getLocation().getYaw();
 
         //Bring to 360 degrees (Clockwise from -X axis)
@@ -206,13 +218,22 @@ public class Util {
         return refreshRate;
     }
 
+    /** Reloads content of config.yml */
+    static boolean reload(){
+        return loadConfig(plugin);
+    }
+
     /** Change how many ticks between each refresh. */
-    static String changeUpdateRate(long newRate) {
-        if (newRate == 0 || newRate > 40) return "Number must be between 1 and 40 ticks";
+    static String changeRefreshRate(long newRate) {
+        if (newRate == 0 || newRate > 40) return ERROR + "Number must be between 1 and 40 ticks";
         refreshRate = newRate;
+        //Saves value for next time
         plugin.getConfig().set("refreshRate", refreshRate);
         plugin.saveConfig();
-        return "Refresh rate set to " + newRate;
+        //Stop task and restart with new refresh rate
+        task.cancel();
+        task = plugin.start(Util.plugin);
+        return "Refresh rate set to " + HIGHLIGHT + newRate;
     }
 
     /** Returns int array of saved player configs. */

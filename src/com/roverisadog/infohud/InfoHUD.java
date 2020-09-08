@@ -14,7 +14,7 @@ public class InfoHUD extends JavaPlugin {
     public void onEnable() {
         this.getLogger().info("InfoHUD Enabled");
         this.saveDefaultConfig();
-        Util.readConfig(this.getConfig(), this);
+        Util.readConfig(this);
         this.getCommand(Util.CMD_NAME).setExecutor(new CommandHandler());
         this.run(this);
     }

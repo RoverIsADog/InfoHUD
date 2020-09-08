@@ -1,0 +1,21 @@
+/.git
+
+#Eclipse
+/metadata
+/.metadata
+/.settings
+/bin
+/.classpath
+/.project
+
+#IntelliJ
+/.idea
+*.iml
+/out
+
+#Visual Studio
+/.vs
+/Debug
+
+#Project Specific
+/lib

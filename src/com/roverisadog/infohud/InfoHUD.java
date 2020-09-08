@@ -52,7 +52,7 @@ public class InfoHUD extends JavaPlugin {
                         col2 = Util.AQA;
                     }
                     else if (darkMode == 2){ //auto : 2
-                        boolean bright = Util.brightBiomes.containsKey(p.getLocation().getBlock().getBiome().toString());
+                        boolean bright = Util.brightBiomes.containsKey(p.getLocation().getBlock().getBiome());
                         col1 = bright ? Util.DBLU : Util.GLD;
                         col2 = bright ? Util.DAQA : Util.WHI;
                     }

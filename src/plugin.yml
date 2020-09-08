@@ -1,0 +1,22 @@
+main: com.roverisadog.infohud.InfoHUD
+name: InfoHUD
+version: 1.0
+api-version: 1.14
+author: RoverIsADog
+description: Displays coordinates and time in the actionbar.
+prefix: InfoHUD
+commands:
+   infohud:
+      description: Displays the list of commands and their functions.
+      usage: /infohud [enable|disable|configure]
+      permission: infohud.use
+      permission-message: You do not have the infohud.toggle permission.
+permissions:
+   infohud.use:
+      description: Allows enabling/disabling/configuring InfoHUD.
+      default: true
+   infohud.admin:
+      description: Allows changing the refresh rate and any other future global settings.
+      default: false
+
+      

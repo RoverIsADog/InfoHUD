@@ -44,7 +44,6 @@ public class Util {
     static final String GLD = ChatColor.GOLD.toString();
     static final String DAQA = ChatColor.DARK_AQUA.toString();
     static final String AQA = ChatColor.AQUA.toString();
-    static final String GRA = ChatColor.GRAY.toString();
     static final String DBLU = ChatColor.DARK_BLUE.toString();
 
     private static long refreshRate;
@@ -93,7 +92,7 @@ public class Util {
     /** Removes player UUID from player list. */
     static String removePlayer(Player player) {
         //Remove from hashmap and string list
-        int[] removedCFG = playerHash.remove(player.getUniqueId());
+        playerHash.remove(player.getUniqueId());
 
         //Saves changes
         plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), null);

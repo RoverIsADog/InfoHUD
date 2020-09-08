@@ -2,21 +2,22 @@
 package com.roverisadog.infohud;
 
 import java.util.HashMap;
-import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.bukkit.ChatColor;
+import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+/** Helper class. */
 public class Util {
     //Configuration files
     private static Plugin plugin;
 
     //Player management
     private static HashMap<UUID, int[]> playerHash;
-    private static List<String> cfgStringList;
-    static HashMap<String, Object> brightBiomes;
+    static HashMap<Biome, Object> brightBiomes;
 
     //Default values
     static final String CMD_NAME = "infohud";
@@ -41,28 +42,25 @@ public class Util {
 
     private static long refreshRate;
 
-    /** Loads contents of config.yml into memory. */
+    /** Loads disk contents of config.yml into memory. */
     public static void readConfig(Plugin plu) {
         Util.plugin = plu;
 
         Util.refreshRate = plu.getConfig().getLong("refreshRate");
-        List<String> tmp = plu.getConfig().getStringList("brightBiomes");
-        brightBiomes = new HashMap<>();
-        for (String cur : tmp){
-            brightBiomes.put(cur, null);
-        }
 
-        //Initialize string list
-        Util.cfgStringList = plu.getConfig().getStringList("playerConfig");
-
-        //UUID, coordEnabled, timeEnabled, tickEnabled, villagerMode
+        //[coordinatesMode, timeMode, darkMode]
         Util.playerHash = new HashMap<>();
-
-        //Loading player config into hashmap
-        for (String currentPlayer : cfgStringList) {
-            String[] s = currentPlayer.split(", ");
-            playerHash.put(UUID.fromString(s[0]), new int[]{Integer.parseInt(s[1]),Integer.parseInt(s[2]), Integer.parseInt(s[3])});
+        for (String player : Objects.requireNonNull(plu.getConfig().getConfigurationSection("playerConfig")).getKeys(false)) {
+            Util.playerHash.put(UUID.fromString(player), plu.getConfig().getIntegerList("playerConfig." + player).stream().mapToInt(i->i).toArray());
         }
+
+        Util.brightBiomes = new HashMap<>();
+        for (String cur : plu.getConfig().getStringList("brightBiomes")){
+            Util.brightBiomes.put(Biome.valueOf(cur), null);
+        }
+
+        plu.saveConfig();
+
     }
 
     /** Checks that the player is in the list.*/
@@ -74,10 +72,9 @@ public class Util {
     static String savePlayer(Player player) {
         //Save into hashmap and string list
         playerHash.put(player.getUniqueId(), DEFAULT_CFG);
-        cfgStringList.add(player.getUniqueId().toString() + ", " + DEFAULT_CFG[0] + ", " + DEFAULT_CFG[1] + ", " + DEFAULT_CFG[2]);
 
         //Saves changes
-        plugin.getConfig().set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
         plugin.saveConfig();
 
         return "InfoHUD is now " + (Util.isOnList(player) ? "enabled" : "disabled") + ".";
@@ -87,10 +84,9 @@ public class Util {
     static String removePlayer(Player player) {
         //Remove from hashmap and string list
         int[] removedCFG = playerHash.remove(player.getUniqueId());
-        cfgStringList.remove(player.getUniqueId().toString() + ", " + removedCFG[0] + ", " + removedCFG[1] + ", " + removedCFG[2]);
 
         //Saves changes
-        plugin.getConfig().set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), null);
         plugin.saveConfig();
 
         return "InfoHUD is now " + (Util.isOnList(player) ? "enabled" : "disabled") + ".";
@@ -100,7 +96,7 @@ public class Util {
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[0] = newMode;
         //Saves changes
-        plugin.getConfig().set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
         plugin.saveConfig();
         return "Coordinates display set to: " + COORDS_OPTIONS[newMode];
     }
@@ -109,7 +105,7 @@ public class Util {
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[1] = newMode;
         //Saves changes
-        plugin.getConfig().set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
         plugin.saveConfig();
         return "Time display set to: " + TIME_OPTIONS[newMode];
     }
@@ -118,7 +114,7 @@ public class Util {
         int[] cfg = playerHash.get(p.getUniqueId());
         cfg[2] = newMode;
         //Saves changes
-        plugin.getConfig().set("playerConfig", cfgStringList);
+        plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
         plugin.saveConfig();
         return "Time display set to: " + DARK_OPTIONS[newMode];
     }

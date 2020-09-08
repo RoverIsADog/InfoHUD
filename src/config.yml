@@ -1,7 +1,6 @@
 refreshRate: 5
 brightBiomes:
 - DESERT
-- SAVANNA
 - SNOWY_TUNDRA
 - SNOWY_MOUNTAINS
 - SNOWY_BEACH
@@ -14,4 +13,4 @@ brightBiomes:
 - MODIFIED_GRAVELLY_MOUNTAINS
 - BEACH
 - SNOWY_BEACH
-playerConfig: []
+playerConfig: {}

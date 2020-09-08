@@ -1,5 +1,5 @@
 # InfoHUD
-![alt text](https://github.com/RoverIsADog/InfoHUD/tree/master/img/banner.png "InfoHUD")\
+![alt text](https://github.com/RoverIsADog/InfoHUD/tree/master/img/banner.png) \
 Display coordinates and time to the player action bar.
 Inspired by the popular Coordinates HUD datapack. Find it at https://vanillatweaks.net/picker/datapacks/.
 
@@ -12,9 +12,9 @@ Automatically switch to dark mode in brighter biomes.
 **Per player:**\
   `/infohud <enable|disable>`: Enable/Disable InfoHUD for yourself.\
   `/infohud coordinates <disabled|enabled>`: Enable/Disable showing coordinates.\
-  ![alt text](https://github.com/RoverIsADog/InfoHUD/tree/master/img/villagerTime.png "Time remaining for villager schedule")\
+  ![alt text](https://github.com/RoverIsADog/InfoHUD/tree/master/img/villagerTime.png) \
   `/infohud time <disabled|currentTick|clock|villagerSchedule>`: How time should be displayed.\
-  ![alt text](https://github.com/RoverIsADog/InfoHUD/tree/master/img/darkMode.png "Dark mode on snow")\
+  ![alt text](https://github.com/RoverIsADog/InfoHUD/tree/master/img/darkMode.png) \
   `/infohud darkMode <disabled|enabled|auto>`: Dark mode settings.\
 **Global:**\
   `/infohud refreshRate`: Change how quickly (ticks) the text is being refreshed. **Under construction**.\

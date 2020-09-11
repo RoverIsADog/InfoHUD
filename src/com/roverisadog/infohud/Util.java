@@ -5,8 +5,12 @@ import java.util.HashMap;
 import java.util.Objects;
 import java.util.UUID;
 
+import net.minecraft.server.v1_16_R2.ChatMessageType;
+import net.minecraft.server.v1_16_R2.IChatBaseComponent;
+import net.minecraft.server.v1_16_R2.PacketPlayOutChat;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
+import org.bukkit.craftbukkit.v1_16_R2.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -238,6 +242,13 @@ public class Util {
     /** Returns int array of saved player configs. */
     static int[] getCFG(Player p) {
         return playerHash.get(p.getUniqueId());
+    }
+
+    static void sendToActionBar(Player player, String msg){
+        CraftPlayer p = (CraftPlayer) player;
+        IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
+        PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
+        p.getHandle().playerConnection.sendPacket(ppoc);
     }
 
 }

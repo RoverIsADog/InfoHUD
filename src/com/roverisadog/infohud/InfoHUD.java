@@ -65,26 +65,25 @@ public class InfoHUD extends JavaPlugin {
                     if (coordsMode == 1){
                         //Only display coords
                         if (timeMode == 0){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder(
-                                    col1 + "XYZ: " + col2 + Util.getCoordinates(p) ).create()));
+                            Util.sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p));
                         }
                         //Display coords and time in ticks
                         else if (timeMode == 1){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder(
+                            Util.sendToActionBar(p,
                                     col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
-                                            col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + p.getWorld().getTime()) ).create());
+                                            col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + p.getWorld().getTime());
                         }
                         //Display coords and time in HH:mm
                         else if (timeMode == 2){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder(
+                            Util.sendToActionBar(p,
                                     col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
-                                            col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + Util.getTime24(p.getWorld().getTime()) ).create()));
+                                            col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + Util.getTime24(p.getWorld().getTime()));
                         }
                         //Display coords and villager timer
                         else if (timeMode == 3){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder(
+                            Util.sendToActionBar(p,
                                     col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
-                                            col1 + String.format("%-10s", Util.getPlayerDirection(p)) + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2) ).create()));
+                                            col1 + String.format("%-10s", Util.getPlayerDirection(p)) + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
                         }
                     }
 
@@ -92,15 +91,15 @@ public class InfoHUD extends JavaPlugin {
                     else if (coordsMode == 0){
                         //Display time in ticks
                         if (timeMode == 1){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder( col2 + p.getWorld().getTime()).create()));
+                            Util.sendToActionBar(p, col2 + p.getWorld().getTime());
                         }
                         //Display time in HH:mm
                         else if (timeMode == 2){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder( col2 + Util.getTime24(p.getWorld().getTime()) ).create()));
+                            Util.sendToActionBar(p, col2 + Util.getTime24(p.getWorld().getTime()));
                         }
                         //Display villager timer
                         else if (timeMode == 3){
-                            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, (new ComponentBuilder( col2 + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2) ).create()));
+                            Util.sendToActionBar(p, col2 + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
                         }
                     }
                 }

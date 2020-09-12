@@ -32,7 +32,7 @@ public class CommandHandler implements TabExecutor {
 
         //Check permissions
         if (!p.hasPermission(Util.PERM_USE)) {
-            sendMsg(p, "You do not have the " + Util.HIGHLIGHT + Util.PERM_USE + Util.RES + " permission to use this command.");
+            sendMsg(p, Util.ERROR + "You do not have the " + Util.HIGHLIGHT + Util.PERM_USE + Util.ERROR + " permission to use this command.");
             return true;
         }
 
@@ -43,22 +43,22 @@ public class CommandHandler implements TabExecutor {
                 sendMsg(p, "Usage: " + Util.HIGHLIGHT + "/" + Util.CMD_NAME + " " + CMD.toString());
         }
 
-        //Try "enable"
+        //"enable"
         else if (args[0].equalsIgnoreCase(CMD.get(0))){
             if (!enabled) sendMsg(p, Util.savePlayer(p));
-            else sendMsg(p, "InfoHUD was already enabled.");
+            else sendMsg(p, Util.HIGHLIGHT + "InfoHUD was already enabled.");
         }
 
-        //Try "disable"
+        //"disable"
         else if (args[0].equalsIgnoreCase(CMD.get(1))){
             if (enabled) sendMsg(p, Util.removePlayer(p));
-            else sendMsg(p, "InfoHUD was already disabled.");
+            else sendMsg(p, Util.HIGHLIGHT + "InfoHUD was already disabled.");
         }
 
-        //Try "coordinates"
+        //"coordinates"
         else if (args[0].equalsIgnoreCase(CMD.get(2))){
             if (enabled){
-                if (args.length < 2) sendMsg(p, "Coordinates display is currently set to: " + Util.HIGHLIGHT + Util.COORDS_OPTIONS[Util.getCFG(p)[0]]);
+                if (args.length < 2) sendMsg(p, "Coordinates display is currently set to: " + Util.HIGHLIGHT + Util.COORDS_OPTIONS[Util.getPlayerConfig(p)[0]]);
                 //disabled : 0
                 else if (args[1].equalsIgnoreCase(CMD_COORD.get(0))) { sendMsg(p, Util.setCoordMode(p, 0)); }
                 //enabled : 0
@@ -69,10 +69,10 @@ public class CommandHandler implements TabExecutor {
             else sendMsg(p, "Enable InfoHUD with " + Util.HIGHLIGHT + "/" + Util.CMD_NAME + " " + CMD.get(0) + Util.RES + " first.");
         }
 
-        //Try changing "time" display format
+        //"time"
         else if (args[0].equalsIgnoreCase(CMD.get(3))){
             if (enabled){
-                if (args.length < 2) sendMsg(p, "Time display is currently set to: " + Util.HIGHLIGHT + Util.TIME_OPTIONS[Util.getCFG(p)[1]]);
+                if (args.length < 2) sendMsg(p, "Time display is currently set to: " + Util.HIGHLIGHT + Util.TIME_OPTIONS[Util.getPlayerConfig(p)[1]]);
                 //disable : 0
                 else if (args[1].equalsIgnoreCase(CMD_TIME.get(0))) { sendMsg(p, Util.setTimeMode(p, 0)); }
                 //currentTick : 1
@@ -87,10 +87,10 @@ public class CommandHandler implements TabExecutor {
             else sendMsg(p, "Enable InfoHUD with " + Util.HIGHLIGHT + "/" + Util.CMD_NAME + " " + CMD.get(0) + Util.RES + " first.");
         }
 
-        //Try changing "darkMode" settings
+        //"darkMode"
         else if (args[0].equalsIgnoreCase(CMD.get(4))) {
             if (enabled){
-                if (args.length < 2) sendMsg(p, "Dark mode is currently set to: " + Util.HIGHLIGHT + Util.DARK_OPTIONS[Util.getCFG(p)[2]]);
+                if (args.length < 2) sendMsg(p, "Dark mode is currently set to: " + Util.HIGHLIGHT + Util.DARK_OPTIONS[Util.getPlayerConfig(p)[2]]);
                 //disabled : 0
                 else if (args[1].equalsIgnoreCase(CMD_DARK.get(0))){ sendMsg(p, Util.setDarkMode(p, 0)); }
                 //enabled : 1
@@ -102,22 +102,22 @@ public class CommandHandler implements TabExecutor {
             }
             else sendMsg(p, "Enable InfoHUD with " + Util.HIGHLIGHT + "/" + Util.CMD_NAME + " " + CMD.get(0) + Util.RES + " first.");
         }
-        //Admin commands [refreshRate, reload]
+        //"refreshRate"
         else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(0))) {
-            if (!p.hasPermission(Util.PERM_ADMIN)) sendMsg(p, "You do not have the " + Util.HIGHLIGHT + Util.PERM_ADMIN + Util.RES + " permission to use this command.");
+            if (!p.hasPermission(Util.PERM_ADMIN)) sendMsg(p, Util.ERROR + "You do not have the " + Util.HIGHLIGHT + Util.PERM_ADMIN + Util.ERROR + " permission to use this command.");
             else {
-                if (args.length < 2) sendMsg(p, "Refresh rate is currently: " + Util.HIGHLIGHT + Util.getRefreshRate() + Util.RES + "ticks.");
+                if (args.length < 2) sendMsg(p, "Refresh rate is currently: " + Util.HIGHLIGHT + Util.getRefreshRate() + "ticks.");
                 else {
-                    try { sendMsg(p, Util.changeRefreshRate(Long.parseLong(args[1]))); }
-                    catch (NumberFormatException e){ sendMsg(p, "Please enter a number between 1 and 40."); }
+                    try { sendMsg(p, Util.setRefreshRate(Long.parseLong(args[1]))); }
+                    catch (NumberFormatException e){ sendMsg(p, Util.ERROR + "Please enter a number between 1 and 40."); }
                 }
             }
-        }
+        }//"reload"
         else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(1))) {
-            if (!p.hasPermission(Util.PERM_ADMIN)) sendMsg(p, "You do not have the " + Util.HIGHLIGHT + Util.PERM_ADMIN + Util.RES + " permission to use this command.");
+            if (!p.hasPermission(Util.PERM_ADMIN)) sendMsg(p, Util.ERROR + "You do not have the " + Util.HIGHLIGHT + Util.PERM_ADMIN + Util.ERROR + " permission to use this command.");
             else {
-                if (args.length > 1) sendMsg(p, "This command does not take arguments.");
-                else sendMsg(p, Util.reload() ? "Reloaded successfully." : Util.ERROR + "Reload failed.");
+                if (args.length > 1) sendMsg(p, Util.ERROR + "This command does not take arguments.");
+                else sendMsg(p, Util.reload() ? Util.GREN + "Reloaded successfully." : Util.ERROR + "Reload failed.");
             }
         }
         //Default

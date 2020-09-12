@@ -27,7 +27,9 @@ public class InfoHUD extends JavaPlugin {
     private Constructor<?> PacketPlayOutChat_CONST, ChatMessage_CONST;
     private Object CHATMESSAGETYPE_ENUM;
 
-    String versionStr;
+    private String versionStr;
+    private long bmStart;
+    private long bmEnd;
 
 
     @Override
@@ -177,15 +179,15 @@ public class InfoHUD extends JavaPlugin {
         return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, new Runnable() {
 
             public void run(){
+                bmStart = System.nanoTime();
                 for (Player p : plugin.getServer().getOnlinePlayers()) {
                     //Skip players that are not on the list
-                    if (!Util.isOnList(p)) continue;
+                    if (!Util.isEnabled(p)) continue;
                     /* Assumes that online players << saved players */
 
-                    int[] playerCfg = Util.getPlayerConfig(p);
-                    int coordsMode = playerCfg[0];
-                    int timeMode = playerCfg[1];
-                    int darkMode = playerCfg[2];
+                    int coordsMode = Util.getCoordinatesMode(p);
+                    int timeMode = Util.getTimeMode(p);
+                    int darkMode = Util.getDarkMode(p);
 
                     if (coordsMode == 0 && timeMode == 0) {
                         Util.removePlayer(p);
@@ -247,6 +249,7 @@ public class InfoHUD extends JavaPlugin {
                             sendToActionBar(p, col2 + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
                         }
                     }
+                    Util.benchmark = System.nanoTime() - bmStart;
                 }
             }
         }, 0L, Util.getRefreshRate());

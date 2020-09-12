@@ -1,9 +1,7 @@
 
 package com.roverisadog.infohud;
 
-import java.util.HashMap;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -14,6 +12,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 /** Helper class. */
 public class Util {
+
     static int apiVersion; //Minecraft release 1.XX
     //Main plugin thread
     static BukkitTask task;
@@ -22,8 +21,7 @@ public class Util {
     private static InfoHUD plugin;
 
     //Player management
-    private static HashMap<UUID, int[]> playerHash;
-    private static final int[] DEFAULT_CFG = new int[]{1, 2, 2}; //[coordsMode, timeMode, darkModeCFG]
+    private static HashMap<UUID, Map<String, Object>> playerHash;
 
     private static HashMap<Biome, Object> brightBiomes;
 
@@ -45,32 +43,32 @@ public class Util {
     static final String WHI = ChatColor.WHITE.toString();
     static final String GLD = ChatColor.GOLD.toString();
     static final String DAQA = ChatColor.DARK_AQUA.toString();
-    static final String AQA = ChatColor.AQUA.toString();
     static final String DBLU = ChatColor.DARK_BLUE.toString();
     static final String GREN = ChatColor.GREEN.toString();
 
+    //Performance
     private static long refreshRate;
+    static long benchmark = 0;
 
-    /** Loads disk contents of config.yml into memory. Returns false if an exception is found. */
+    /** Loads disk contents of config.yml into memory. Returns false if an unhandled exception is found. */
     public static boolean loadConfig(Plugin plu) {
         try {
             Util.plugin = (InfoHUD) plu;
-
             Util.refreshRate = plu.getConfig().getLong("refreshRate");
 
-            //[coordinatesMode, timeMode, darkMode]
+            // Map< UUID , Map<String, Integer> > -- Loading players
             Util.playerHash = new HashMap<>();
-            for (String player : Objects.requireNonNull(plu.getConfig().getConfigurationSection("playerConfig")).getKeys(false)) {
-                Util.playerHash.put(UUID.fromString(player), plu.getConfig().getIntegerList("playerConfig." + player).stream().mapToInt(i->i).toArray());
+            for (String playerStr : plu.getConfig().getConfigurationSection("playerConfig").getKeys(false)) {
+                Util.playerHash.put(UUID.fromString(playerStr), plu.getConfig().getConfigurationSection("playerConfig." + playerStr).getValues(false) );
             }
 
-            Util.brightBiomes = new HashMap<>();
+            Util.brightBiomes = new HashMap<>(); //Loading biomes
             for (String cur : plu.getConfig().getStringList("brightBiomes")){
                 try {
-                    Biome b = Biome.valueOf(cur);
-                    Util.brightBiomes.put(Biome.valueOf(cur), null);
+                    Biome bio = Biome.valueOf(cur);
+                    Util.brightBiomes.put(bio, null);
                 }
-                catch (Exception ignored) {} //Biome misspelled, nonexistant or from future version
+                catch (Exception ignored) {} //Biome misspelled, nonexistent or from future version
             }
             return true;
         } catch (Exception e){
@@ -81,57 +79,60 @@ public class Util {
     }
 
     /** Checks that the player is in the list.*/
-    static boolean isOnList(Player player) {
+    static boolean isEnabled(Player player) {
         return playerHash.containsKey(player.getUniqueId());
     }
 
     /** Saves player UUID into player list. */
     static String savePlayer(Player player) {
-        playerHash.put(player.getUniqueId(), DEFAULT_CFG.clone()); //Save into hashmap and string list
+        //Putting default values
+        HashMap<String, Object> defaultCfg = new HashMap<>();
+        defaultCfg.put("coordinatesMode", 1); //1 : enabled
+        defaultCfg.put("timeMode", 2); //2 : clock
+        defaultCfg.put("darkMode", 2); //2 : auto
+        playerHash.put(player.getUniqueId(), defaultCfg);
         //Saves changes
         plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
         plugin.saveConfig();
-        return "InfoHUD is now " + (Util.isOnList(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
+        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
     }
 
     /** Removes player UUID from player list. */
     static String removePlayer(Player player) {
-        playerHash.remove(player.getUniqueId()); //Remove from hashmap and string list
+        playerHash.remove(player.getUniqueId());
         //Saves changes
         plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), null);
         plugin.saveConfig();
-        return "InfoHUD is now " + (Util.isOnList(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
+        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
     }
 
     /** Changes coordinates mode and returns new mode. */
     static String setCoordMode(Player p, int newMode){
-        int[] cfg = playerHash.get(p.getUniqueId());
-        cfg[0] = newMode;
+        playerHash.get(p.getUniqueId()).put("coordinatesMode", newMode);
         //Saves changes
-        plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
+        plugin.getConfig().createSection("playerConfig." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
         return "Coordinates display set to: " + HIGHLIGHT + COORDS_OPTIONS[newMode] + RES;
     }
 
     /** Changes time mode and returns new mode. */
     static String setTimeMode(Player p, int newMode){
+        String msg = "";
         if (newMode == 3 &&  apiVersion < 12)
-            return ERROR + "Villager schedule display is meaningless for versions before 1.14. You are free to switch out.";
+            return ERROR + "Villager schedule display is meaningless for versions before 1.14.";
 
-        int[] cfg = playerHash.get(p.getUniqueId());
-        cfg[1] = newMode;
+        playerHash.get(p.getUniqueId()).put("timeMode", newMode);
         //Saves changes
-        plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
+        plugin.getConfig().createSection("playerConfig." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
         return "Time display set to: " + HIGHLIGHT + TIME_OPTIONS[newMode] + RES;
     }
 
     /** Changes dark mode settings and returns new settings. */
     static String setDarkMode(Player p, int newMode){
-        int[] cfg = playerHash.get(p.getUniqueId());
-        cfg[2] = newMode;
+        playerHash.get(p.getUniqueId()).put("darkMode", newMode);
         //Saves changes
-        plugin.getConfig().set("playerConfig." + p.getUniqueId().toString(), cfg);
+        plugin.getConfig().createSection("playerConfig." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
         return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES;
     }
@@ -245,14 +246,26 @@ public class Util {
         }
     }
 
-    /** Returns int array of saved player configs. */
-    static int[] getPlayerConfig(Player p) {
-        return playerHash.get(p.getUniqueId());
+    static int getCoordinatesMode(Player p) {
+        return (int) playerHash.get(p.getUniqueId()).get("coordinatesMode");
+    }
+
+    static int getTimeMode(Player p) {
+        return (int) playerHash.get(p.getUniqueId()).get("timeMode");
+    }
+
+    static int getDarkMode(Player p) {
+        return (int) playerHash.get(p.getUniqueId()).get("darkMode");
     }
 
     /** Shortcut to print to the console. */
     static void print(String msg) {
         Bukkit.getConsoleSender().sendMessage(Util.SIGNATURE + "[InfoHUD] " + Util.RES + msg);
+    }
+
+    static String getBenchmark(){
+        return "InfoHUD took " + Util.HIGHLIGHT + Util.benchmark/(1000) + Util.RES +" ns (" + Util.HIGHLIGHT +
+                String.format("%.3f", Util.benchmark/(50000000D) * (20D/Util.getRefreshRate())) + Util.RES + " ticks/second) during the last update.";
     }
 
     /*

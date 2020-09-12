@@ -8,7 +8,7 @@ prefix: InfoHUD
 commands:
    infohud:
       description: Displays the list of commands and their functions.
-      usage: /infohud [enable|disable|configure]
+      usage: /infohud help
       permission: infohud.use
       permission-message: You do not have the infohud.toggle permission.
 permissions:

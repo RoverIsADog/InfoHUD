@@ -14,10 +14,11 @@ import org.bukkit.util.StringUtil;
 
 import javax.annotation.Nonnull;
 
+/** Handles command completion and execution. */
 public class CommandHandler implements TabExecutor {
     //Autocomplete choices
     private final static List<String> CMD = Arrays.asList("enable", "disable", "coordinates", "time", "darkMode");
-    private final static List<String> CMD_ADMIN = Arrays.asList("refreshRate", "reload");
+    private final static List<String> CMD_ADMIN = Arrays.asList("refreshRate", "reload", "benchmark");
     private final static List<String> CMD_COORD = Arrays.asList("disabled", "enabled");
     private final static List<String> CMD_TIME = Arrays.asList("disabled", "currentTick", "clock", "villagerSchedule");
     private final static List<String> CMD_DARK = Arrays.asList("disabled", "enabled", "auto");
@@ -28,7 +29,7 @@ public class CommandHandler implements TabExecutor {
 
         Player p = (Player)sender;
 
-        boolean enabled = Util.isOnList(p);
+        boolean enabled = Util.isEnabled(p);
 
         //Check permissions
         if (!p.hasPermission(Util.PERM_USE)) {
@@ -58,7 +59,7 @@ public class CommandHandler implements TabExecutor {
         //"coordinates"
         else if (args[0].equalsIgnoreCase(CMD.get(2))){
             if (enabled){
-                if (args.length < 2) sendMsg(p, "Coordinates display is currently set to: " + Util.HIGHLIGHT + Util.COORDS_OPTIONS[Util.getPlayerConfig(p)[0]]);
+                if (args.length < 2) sendMsg(p, "Coordinates display is currently set to: " + Util.HIGHLIGHT + Util.COORDS_OPTIONS[Util.getCoordinatesMode(p)]);
                 //disabled : 0
                 else if (args[1].equalsIgnoreCase(CMD_COORD.get(0))) { sendMsg(p, Util.setCoordMode(p, 0)); }
                 //enabled : 0
@@ -72,7 +73,7 @@ public class CommandHandler implements TabExecutor {
         //"time"
         else if (args[0].equalsIgnoreCase(CMD.get(3))){
             if (enabled){
-                if (args.length < 2) sendMsg(p, "Time display is currently set to: " + Util.HIGHLIGHT + Util.TIME_OPTIONS[Util.getPlayerConfig(p)[1]]);
+                if (args.length < 2) sendMsg(p, "Time display is currently set to: " + Util.HIGHLIGHT + Util.TIME_OPTIONS[Util.getTimeMode(p)]);
                 //disable : 0
                 else if (args[1].equalsIgnoreCase(CMD_TIME.get(0))) { sendMsg(p, Util.setTimeMode(p, 0)); }
                 //currentTick : 1
@@ -90,7 +91,7 @@ public class CommandHandler implements TabExecutor {
         //"darkMode"
         else if (args[0].equalsIgnoreCase(CMD.get(4))) {
             if (enabled){
-                if (args.length < 2) sendMsg(p, "Dark mode is currently set to: " + Util.HIGHLIGHT + Util.DARK_OPTIONS[Util.getPlayerConfig(p)[2]]);
+                if (args.length < 2) sendMsg(p, "Dark mode is currently set to: " + Util.HIGHLIGHT + Util.DARK_OPTIONS[Util.getDarkMode(p)]);
                 //disabled : 0
                 else if (args[1].equalsIgnoreCase(CMD_DARK.get(0))){ sendMsg(p, Util.setDarkMode(p, 0)); }
                 //enabled : 1
@@ -119,7 +120,15 @@ public class CommandHandler implements TabExecutor {
                 if (args.length > 1) sendMsg(p, Util.ERROR + "This command does not take arguments.");
                 else sendMsg(p, Util.reload() ? Util.GREN + "Reloaded successfully." : Util.ERROR + "Reload failed.");
             }
+        }//"benchmark"
+        else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(2))) {
+            if (!p.hasPermission(Util.PERM_ADMIN)) sendMsg(p, Util.ERROR + "You do not have the " + Util.HIGHLIGHT + Util.PERM_ADMIN + Util.ERROR + " permission to use this command.");
+            else {
+                if (args.length > 1) sendMsg(p, Util.ERROR + "This command does not take arguments.");
+                else sendMsg(p, Util.getBenchmark());
+            }
         }
+
         //Default
         else {
             sendMsg(p, Util.ERROR + "Unknown command.");

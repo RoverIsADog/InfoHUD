@@ -44,7 +44,7 @@ public class InfoHUD extends JavaPlugin {
             //Version check and reflection attempt
             this.versionStr = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3]; //Eg: org.bukkit.craftbukkit.v1_16_R2
 
-            Util.versionInt = Integer.parseInt(versionStr.split("_")[1]);
+            Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]);
             /*
             if (Integer.parseInt(versionStr.split("_")[1]) < 12)
                 Util.versionInt = 0;
@@ -53,7 +53,7 @@ public class InfoHUD extends JavaPlugin {
             else
                 Util.versionInt = 2;
             */
-            Util.print(Util.GREN + "API Version: " + Util.HIGHLIGHT + Util.versionInt);
+            Util.print(Util.GREN + "API Version: " + Util.HIGHLIGHT + Util.apiVersion);
 
             if (!isCompatibleVersion() || !reflectionPackets()){
                 throw new Exception(Util.ERROR + "Version error. Shutting down...");
@@ -99,11 +99,11 @@ public class InfoHUD extends JavaPlugin {
             //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
             PacketPlayOutChat_CLASS = Class.forName("net.minecraft.server." + versionStr + ".PacketPlayOutChat"); //import net.minecraft.server.VERSION.IChatBaseComponent;
 
-            if (Util.versionInt < 12){ //1.8 - 1.11
+            if (Util.apiVersion < 12){ //1.8 - 1.11
                 //1.8 - 1.11 : PacketPlayOutChat(IChatBaseComponent, byte)
                 PacketPlayOutChat_CONST = PacketPlayOutChat_CLASS.getConstructor(IChatBaseComponent_CLASS, byte.class);
             }
-            else if (Util.versionInt < 16){ //1.12 - 1.15
+            else if (Util.apiVersion < 16){ //1.12 - 1.15
                 //import net.minecraft.server.v1_16_R2.ChatMessageType;
                 ChatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistant on 1.8
                 //ChatMessageType.GAME_INFO -> 2 | PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
@@ -143,10 +143,10 @@ public class InfoHUD extends JavaPlugin {
 
             //PacketPlayOutChat ppoc <- new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, UUID);
             Object packet;
-            if (Util.versionInt < 12) {
+            if (Util.apiVersion < 12) {
                 packet = PacketPlayOutChat_CONST.newInstance(icbc, (byte) 2);
             }
-            else if (Util.versionInt < 16) { //1.12 - 1.16
+            else if (Util.apiVersion < 16) { //1.12 - 1.16
                 packet = PacketPlayOutChat_CONST.newInstance(icbc, CHATMESSAGETYPE_ENUM);
             }
             else { //1.16+

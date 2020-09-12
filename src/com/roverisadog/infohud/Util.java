@@ -14,7 +14,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 /** Helper class. */
 public class Util {
-    static int versionInt; //0: 1.8 - 1.11, 1: 1.12 - 1.15, 2: 1.16+
+    static int apiVersion; //Minecraft release 1.XX
     //Main plugin thread
     static BukkitTask task;
 
@@ -115,7 +115,7 @@ public class Util {
 
     /** Changes time mode and returns new mode. */
     static String setTimeMode(Player p, int newMode){
-        if (newMode == 3 &&  versionInt < 12)
+        if (newMode == 3 &&  apiVersion < 12)
             return ERROR + "Villager schedule display is meaningless for versions before 1.14. You are free to switch out.";
 
         int[] cfg = playerHash.get(p.getUniqueId());

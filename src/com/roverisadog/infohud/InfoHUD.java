@@ -216,20 +216,17 @@ public class InfoHUD extends JavaPlugin {
                         }
                         //Display coords and time in ticks
                         else if (timeMode == 1){
-                            sendToActionBar(p,
-                                    col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
                                             col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + p.getWorld().getTime());
                         }
                         //Display coords and time in HH:mm
                         else if (timeMode == 2){
-                            sendToActionBar(p,
-                                    col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
                                             col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + Util.getTime24(p.getWorld().getTime()));
                         }
                         //Display coords and villager timer
                         else if (timeMode == 3){
-                            sendToActionBar(p,
-                                    col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
                                             col1 + String.format("%-10s", Util.getPlayerDirection(p)) + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
                         }
                     }
@@ -249,8 +246,8 @@ public class InfoHUD extends JavaPlugin {
                             sendToActionBar(p, col2 + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
                         }
                     }
-                    Util.benchmark = System.nanoTime() - bmStart;
                 }
+                Util.benchmark = System.nanoTime() - bmStart;
             }
         }, 0L, Util.getRefreshRate());
     }

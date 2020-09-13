@@ -12,17 +12,15 @@ import org.bukkit.scheduler.BukkitTask;
 
 /** Helper class. */
 public class Util {
+    //Minecraft release 1.XX
+    static int apiVersion;
 
-    static int apiVersion; //Minecraft release 1.XX
-    //Main plugin thread
+    //Plugin instance and currently running thread
     static BukkitTask task;
-
-    //Main Plugin class instance
     private static InfoHUD plugin;
 
     //Player management
     private static HashMap<UUID, Map<String, Object>> playerHash;
-
     private static HashMap<Biome, Object> brightBiomes;
 
     //Default values
@@ -53,6 +51,8 @@ public class Util {
     /** Loads disk contents of config.yml into memory. Returns false if an unhandled exception is found. */
     public static boolean loadConfig(Plugin plu) {
         try {
+            plu.reloadConfig();
+
             Util.plugin = (InfoHUD) plu;
             Util.refreshRate = plu.getConfig().getLong("refreshRate");
 

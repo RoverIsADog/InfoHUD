@@ -1,6 +1,6 @@
 #Bright Biomes:
 #    Find the list of biomes at https://minecraft.gamepedia.com/Biome#Biome_IDs.
-#    Alternatively enter the biome as it appears in the F3 menu
+#    Alternatively enter the biome as it appears in the F3 menu, or use /infohud biome add
 #    Must be in UPPERCASE. Eg. DEEP_FROZEN_OCEAN
 #
 #Refresh Rate:
@@ -17,16 +17,29 @@ refreshRate: 5
 brightBiomes:
 - DESERT
 - DESERT_HILLS
-- SNOWY_TUNDRA
-- SNOWY_MOUNTAINS
+- ICE_DESERT
+- BEACH
 - SNOWY_BEACH
+- COLD_BEACH
+- SNOWY_TUNDRA
+- COLD_TUNDRA
+- ICE_FLATS
+- MUTATED_ICE_FLATS
 - SNOWY_TAIGA
 - SNOWY_TAIGA_HILLS
 - SNOWY_TAIGA_MOUNTAINS
-- ICE_SPIKES
-- MOUNTAINS
+- COLD_TAIGA
+- COLD_TAIGA_HILLS
+- COLD_TAIGA_MOUNTAINS
+- ICE_MOUNTAINS
+- SNOWY_MOUNTAINS
+- COLD_MOUNTAINS
+- EXTREME_HILLS
+- EXTREME_HILLS_PLUS_MOUNTAINS
 - GRAVELLY_MOUNTAINS
 - MODIFIED_GRAVELLY_MOUNTAINS
-- BEACH
-- SNOWY_BEACH
+- ICE_PLAINS
+- ICE_PLAINS_SPIKE
+- ICE_SPIKES
+- FROZEN_RIVER
 playerConfig: {}

@@ -20,7 +20,7 @@ public class InfoHUD extends JavaPlugin {
     //import net.minecraft.server.v1_16_R2.PacketPlayOutChat;
     //import org.bukkit.craftbukkit.v1_16_R2.entity.CraftPlayer;
 
-    //Take all class creation, method call, field call from usual actionbar sendmessage
+    //Take all class creation, method call, field call from usual actionbar send message
     private Class<?> CraftPlayer_CLASS, PacketPlayOutChat_CLASS, IChatBaseComponent_CLASS, ChatMessage_CLASS, Packet_CLASS, ChatMessageType_CLASS;
     private Field playerConnection_FIELD;
     private Method getHandle_MET, sendPacket_MET;
@@ -29,7 +29,6 @@ public class InfoHUD extends JavaPlugin {
 
     private String versionStr;
     private long bmStart;
-    private long bmEnd;
 
 
     @Override
@@ -212,21 +211,21 @@ public class InfoHUD extends JavaPlugin {
                     if (coordsMode == 1){
                         //Only display coords
                         if (timeMode == 0){
-                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p));
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinatesStr(p));
                         }
                         //Display coords and time in ticks
                         else if (timeMode == 1){
-                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinatesStr(p) + " " +
                                             col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + p.getWorld().getTime());
                         }
                         //Display coords and time in HH:mm
                         else if (timeMode == 2){
-                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinatesStr(p) + " " +
                                             col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + Util.getTime24(p.getWorld().getTime()));
                         }
                         //Display coords and villager timer
                         else if (timeMode == 3){
-                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinates(p) + " " +
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinatesStr(p) + " " +
                                             col1 + String.format("%-10s", Util.getPlayerDirection(p)) + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
                         }
                     }

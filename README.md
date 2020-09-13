@@ -1,4 +1,6 @@
-# InfoHUD
+<p align="center"><img src="/img/thumbnailRect.png"></p>
+
+## InfoHUD
 ![banner](/img/banner.png) \
 Display coordinates and time to the player action bar. Inspired by the popular Coordinates HUD datapack. Find it at https://vanillatweaks.net/picker/datapacks/. \
 Version **1.0**.

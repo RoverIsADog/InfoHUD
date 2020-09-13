@@ -1,18 +1,3 @@
-#Bright Biomes:
-#    Find the list of biomes at https://minecraft.gamepedia.com/Biome#Biome_IDs.
-#    Alternatively enter the biome as it appears in the F3 menu, or use /infohud biome add
-#    Must be in UPPERCASE. Eg. DEEP_FROZEN_OCEAN
-#
-#Refresh Rate:
-#    Number of ticks between each update
-#
-#Player Configuration Structure
-# playerConfig:
-#   UUID:
-#     coordinatesMode: <0:Enabled | 1:Disabled>
-#     timeMode: <0:Disabled | 1:Current Tick | 2:24h Clock | 3: 1.14 Villager Schedule>
-#     darkMode: <0:Disabled | 1:Enabled>
-
 refreshRate: 5
 brightBiomes:
 - DESERT

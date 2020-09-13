@@ -242,16 +242,17 @@ public class CommandHandler implements TabExecutor {
             }
         }
         else if (args.length == 3) {
+            //"brightBiomes"
             if (args[0].equalsIgnoreCase(CMD_ADMIN.get(3))) {
-                //"add"
+                //"brightBiomes add"
                 if (args[1].equalsIgnoreCase(CMD_BIOMES.get(0))) {
-                    return BIOME_LIST;
+                    return StringUtil.copyPartialMatches(args[2], BIOME_LIST, new ArrayList<>());
                 }
-                //"remove"
+                //"brightBiomes remove"
                 else if (args[1].equalsIgnoreCase(CMD_BIOMES.get(1))) {
                     ArrayList<String> temp = Util.getBrightBiomesList();
-                    temp.add("currentBiome");
-                    return temp;
+                    temp.add("here");
+                    return StringUtil.copyPartialMatches(args[2], temp, new ArrayList<>());
                 }
             }
         }

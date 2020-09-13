@@ -98,7 +98,7 @@ public class InfoHUD extends JavaPlugin {
             }
             else if (Util.apiVersion < 16){ //1.12 - 1.15
                 //import net.minecraft.server.v1_16_R2.ChatMessageType;
-                ChatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistant on 1.8
+                ChatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
                 //ChatMessageType.GAME_INFO -> 2 | PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                 CHATMESSAGETYPE_ENUM = ChatMessageType_CLASS.getEnumConstants()[2];
                 //1.12 - 1.16 : PacketPlayOutChat(IChatBaseComponent, ChatMessageType)
@@ -106,7 +106,7 @@ public class InfoHUD extends JavaPlugin {
             }
             else { //1.16+
                 //import net.minecraft.server.v1_16_R2.ChatMessageType;
-                ChatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistant on 1.8
+                ChatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
                 //ChatMessageType.GAME_INFO -> 2 | PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                 CHATMESSAGETYPE_ENUM = ChatMessageType_CLASS.getEnumConstants()[2];
                 //1.16 - ?.?? : PacketPlayOutChat(IChatBaseComponent, ChatMessageType, UUID)
@@ -114,7 +114,7 @@ public class InfoHUD extends JavaPlugin {
             }
 
         } catch (Exception e) {
-            Util.print(Util.ERROR + "Exception while initializing packets with version " + versionStr + ". Version may be incompatible.");
+            Util.print(Util.ERROR + "Exception while initializing packets with NMS version 1." + versionStr + ". Version may be incompatible.");
             e.printStackTrace();
             Bukkit.getPluginManager().disablePlugin(this);
             return false;

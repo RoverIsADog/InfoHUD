@@ -1,7 +1,6 @@
 main: com.roverisadog.infohud.InfoHUD
 name: InfoHUD
 version: 1.0
-api-version: 1.8
 author: RoverIsADog
 description: Displays coordinates and time in the actionbar.
 prefix: InfoHUD

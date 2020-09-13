@@ -29,6 +29,10 @@ public class Util {
     static final String[] TIME_OPTIONS = new String[]{"disabled", "ticks", "24 hours clock", "villager schedule"};
     static final String[] DARK_OPTIONS = new String[]{"disabled", "enabled", "auto"};
 
+    static final String BRIGHT_BIOMES_PATH = "brightBiomes";
+    static final String PLAYER_CFG_PATH = "playerConfig";
+    static final String REFRESH_RATE_PATH = "refreshRate";
+
     //Shortcuts
     static final String PERM_USE = "infohud.use";
     static final String PERM_ADMIN = "infohud.admin";
@@ -52,18 +56,15 @@ public class Util {
     public static boolean loadConfig(Plugin plu) {
         try {
             plu.reloadConfig();
-
             Util.plugin = (InfoHUD) plu;
-            Util.refreshRate = plu.getConfig().getLong("refreshRate");
-
+            Util.refreshRate = plu.getConfig().getLong(REFRESH_RATE_PATH);
             // Map< UUID , Map<String, Integer> > -- Loading players
             Util.playerHash = new HashMap<>();
-            for (String playerStr : plu.getConfig().getConfigurationSection("playerConfig").getKeys(false)) {
-                Util.playerHash.put(UUID.fromString(playerStr), plu.getConfig().getConfigurationSection("playerConfig." + playerStr).getValues(false) );
+            for (String playerStr : plu.getConfig().getConfigurationSection(PLAYER_CFG_PATH).getKeys(false)) {
+                Util.playerHash.put(UUID.fromString(playerStr), plu.getConfig().getConfigurationSection(PLAYER_CFG_PATH + "." + playerStr).getValues(false) );
             }
-
             Util.brightBiomes = new HashMap<>(); //Loading biomes
-            for (String cur : plu.getConfig().getStringList("brightBiomes")){
+            for (String cur : plu.getConfig().getStringList(BRIGHT_BIOMES_PATH)){
                 try {
                     Biome bio = Biome.valueOf(cur);
                     Util.brightBiomes.put(bio, null);
@@ -75,8 +76,21 @@ public class Util {
             e.printStackTrace();
             return false;
         }
-
     }
+
+    /** Reloads content of config.yml */
+    static boolean reload(){
+        boolean b;
+        try {
+            task.cancel();
+            b = loadConfig(plugin);
+            task = plugin.start(Util.plugin);
+            return b;
+        }
+        catch(Exception e){ return false; }
+    }
+
+    /* ---------------------------------------------------------------------- Player Management ---------------------------------------------------------------------- */
 
     /** Checks that the player is in the list.*/
     static boolean isEnabled(Player player) {
@@ -92,7 +106,7 @@ public class Util {
         defaultCfg.put("darkMode", 2); //2 : auto
         playerHash.put(player.getUniqueId(), defaultCfg);
         //Saves changes
-        plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
+        plugin.getConfig().set(PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
         plugin.saveConfig();
         return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
     }
@@ -101,45 +115,49 @@ public class Util {
     static String removePlayer(Player player) {
         playerHash.remove(player.getUniqueId());
         //Saves changes
-        plugin.getConfig().set("playerConfig." + player.getUniqueId().toString(), null);
+        plugin.getConfig().set(PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
         plugin.saveConfig();
         return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
     }
 
+    /* ---------------------------------------------------------------------- COORDINATES ---------------------------------------------------------------------- */
+
+    /** Returns coordinates display settings for player. */
+    static int getCoordinatesMode(Player p) {
+        return (int) playerHash.get(p.getUniqueId()).get("coordinatesMode");
+    }
+
     /** Changes coordinates mode and returns new mode. */
-    static String setCoordMode(Player p, int newMode){
+    static String setCoordinatesMode(Player p, int newMode){
         playerHash.get(p.getUniqueId()).put("coordinatesMode", newMode);
         //Saves changes
-        plugin.getConfig().createSection("playerConfig." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
+        plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
         return "Coordinates display set to: " + HIGHLIGHT + COORDS_OPTIONS[newMode] + RES;
     }
 
+    /** Returns string of player position. */
+    static String getCoordinatesStr(Player p){
+        return p.getLocation().getBlockX() + " " + p.getLocation().getBlockY() + " " + p.getLocation().getBlockZ();
+    }
+
+    /* ---------------------------------------------------------------------- COORDINATES ---------------------------------------------------------------------- */
+
+    /** Returns time display settings for player. */
+    static int getTimeMode(Player p) {
+        return (int) playerHash.get(p.getUniqueId()).get("timeMode");
+    }
+
     /** Changes time mode and returns new mode. */
     static String setTimeMode(Player p, int newMode){
-        String msg = "";
         if (newMode == 3 &&  apiVersion < 12)
             return ERROR + "Villager schedule display is meaningless for versions before 1.14.";
 
         playerHash.get(p.getUniqueId()).put("timeMode", newMode);
         //Saves changes
-        plugin.getConfig().createSection("playerConfig." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
+        plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
         return "Time display set to: " + HIGHLIGHT + TIME_OPTIONS[newMode] + RES;
-    }
-
-    /** Changes dark mode settings and returns new settings. */
-    static String setDarkMode(Player p, int newMode){
-        playerHash.get(p.getUniqueId()).put("darkMode", newMode);
-        //Saves changes
-        plugin.getConfig().createSection("playerConfig." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
-        plugin.saveConfig();
-        return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES;
-    }
-
-    /** Returns string of player position. */
-    static String getCoordinates(Player p){
-        return p.getLocation().getBlockX() + " " + p.getLocation().getBlockY() + " " + p.getLocation().getBlockZ();
     }
 
     /** Converts minecraft internal clock to HH:mm string. */
@@ -179,6 +197,80 @@ public class Util {
         }
     }
 
+    /* ---------------------------------------------------------------------- Dark Mode ---------------------------------------------------------------------- */
+
+    /** Returns dark mode settings for player. */
+    static int getDarkMode(Player p) {
+        return (int) playerHash.get(p.getUniqueId()).get("darkMode");
+    }
+
+    /** Changes dark mode settings and returns new settings. */
+    static String setDarkMode(Player p, int newMode){
+        playerHash.get(p.getUniqueId()).put("darkMode", newMode);
+        //Saves changes
+        plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
+        plugin.saveConfig();
+        return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES;
+    }
+
+    /** Returns whether the player is in a bright biome for darkmode. */
+    static boolean isInBrightBiome(Player p) {
+        return brightBiomes.containsKey(p.getLocation().getBlock().getBiome());
+    }
+
+    /** Get a list of all bright biomes currently recognized. Not the same as all bright biomes
+     * on file as some may not be recognized by older/newer minecraft versions. */
+    static ArrayList<String> getBrightBiomesList(){
+        ArrayList<String> biomeList = new ArrayList<>();
+        for (Biome b : brightBiomes.keySet()) biomeList.add(b.toString());
+        return biomeList;
+    }
+
+    static String addBrightBiome(Biome b) {
+        try {
+            //Already there
+            if (plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH).contains(b.toString())) {
+                return HIGHLIGHT + b.toString() + RES + " is already in the bright biomes list";
+            }
+            else {
+                //Add to HashMap
+                brightBiomes.put(b, null);
+                //Update config.yml
+                List<String> biomeList = new ArrayList<>(plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH));
+                biomeList.add(b.toString());
+                plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
+                plugin.saveConfig();
+                return GREN + "Added " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ERROR + "Error while adding " + HIGHLIGHT + b.toString() + ERROR + " to bright biomes list";
+        }
+    }
+
+    static String removeBrightBiome(Biome b) {
+        try {
+            if (plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH).contains(b.toString())) {
+                //Update config.yml
+                List<String> biomeList = new ArrayList<>(plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH));
+                biomeList.remove(b.toString());
+                plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
+                plugin.saveConfig();
+                //Remove from HashMap
+                brightBiomes.remove(b);
+                return GREN + "Removed " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list";
+            }
+            else {
+                return HIGHLIGHT + b.toString() + RES + " isn't in the biomes list";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ERROR + "Error while removing " + HIGHLIGHT + b.toString() + ERROR + " to the bright biome list";
+        }
+    }
+
+    /* ---------------------------------------------------------------------- Direction  ---------------------------------------------------------------------- */
+
     /** Calculates direction the player is facing and returns corresponding string. */
     static String getPlayerDirection(Player player) {
         //-180: Leaning left | +180: Leaning right
@@ -203,24 +295,7 @@ public class Util {
         }
     }
 
-    /** Returns whether the player is in a bright biome for darkmode. */
-    static boolean isInBrightBiome(Player p) {
-        return brightBiomes.containsKey(p.getLocation().getBlock().getBiome());
-    }
-
-    /** Reloads content of config.yml */
-    static boolean reload(){
-        boolean b;
-        try {
-            task.cancel();
-            b = loadConfig(plugin);
-            task = plugin.start(Util.plugin);
-            return b;
-        }
-        catch(Exception e){
-            return false;
-        }
-    }
+    /* ---------------------------------------------------------------------- Admin ---------------------------------------------------------------------- */
 
     /** How many tick between each refresh. Values higher than 20 may lead to actionbar text fading. */
     static long getRefreshRate() {
@@ -244,18 +319,6 @@ public class Util {
             e.printStackTrace();
             return ERROR + "Error while changing refresh rate.";
         }
-    }
-
-    static int getCoordinatesMode(Player p) {
-        return (int) playerHash.get(p.getUniqueId()).get("coordinatesMode");
-    }
-
-    static int getTimeMode(Player p) {
-        return (int) playerHash.get(p.getUniqueId()).get("timeMode");
-    }
-
-    static int getDarkMode(Player p) {
-        return (int) playerHash.get(p.getUniqueId()).get("darkMode");
     }
 
     /** Shortcut to print to the console. */

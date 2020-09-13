@@ -150,7 +150,7 @@ public class Util {
 
     /** Changes time mode and returns new mode. */
     static String setTimeMode(Player p, int newMode){
-        if (newMode == 3 &&  apiVersion < 12)
+        if (newMode == 3 &&  apiVersion < 14)
             return ERROR + "Villager schedule display is meaningless for versions before 1.14.";
 
         playerHash.get(p.getUniqueId()).put("timeMode", newMode);

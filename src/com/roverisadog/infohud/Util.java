@@ -327,8 +327,8 @@ public class Util {
     }
 
     static String getBenchmark(){
-        return "InfoHUD took " + Util.HIGHLIGHT + Util.benchmark/(1000) + Util.RES +" ns (" + Util.HIGHLIGHT +
-                String.format("%.3f", Util.benchmark/(50000000D) * (20D/Util.getRefreshRate())) + Util.RES + " ticks/second) during the last update.";
+        return "InfoHUD took " + Util.HIGHLIGHT + String.format("%.3f", Util.benchmark/(1000000D)) + Util.RES +" ms (" + Util.HIGHLIGHT +
+                String.format("%.2f", Util.benchmark/(10000D) / 50D) + Util.RES + " % tick) during the last update.";
     }
 
     /*

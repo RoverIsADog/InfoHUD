@@ -8,7 +8,7 @@ Display your current coordinates.
 <p align="center"><img src="/img/banner.png"></p>
 Display the current tick, current time (ticks/HH:mm) or the current villager schedule (1.14+).
 <p align="center"><img src="/img/villagerTime.png"></p>
-Automatically switch to dark mode in brighter biomes.
+Automatically switch to dark mode in brighter biomes such as deserts and snow biomes.
 <p align="center"><img src="/img/darkMode.png"></p>
 
 ## Installation

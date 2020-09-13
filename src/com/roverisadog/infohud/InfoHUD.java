@@ -54,7 +54,7 @@ public class InfoHUD extends JavaPlugin {
             else
                 Util.versionInt = 2;
             */
-            Util.print(Util.GREN + "API Version: " + Util.HIGHLIGHT + Util.apiVersion);
+            Util.print(Util.GREN + "NMS Version: 1." + Util.apiVersion);
 
             if (!isCompatibleVersion() || !reflectionPackets()){
                 throw new Exception(Util.ERROR + "Version error. Shutting down...");

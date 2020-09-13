@@ -1,7 +1,12 @@
 main: com.roverisadog.infohud.InfoHUD
-name: InfoHUD
 version: 1.0
+#1.13 to avoid legacy mode.
+api-version: 1.13
+load: POSTWORLD
+
+name: InfoHUD
 author: RoverIsADog
+website: https://github.com/RoverIsADog/InfoHUD
 description: Displays coordinates and time in the actionbar.
 prefix: InfoHUD
 commands:

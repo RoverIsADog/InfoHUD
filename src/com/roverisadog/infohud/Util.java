@@ -133,7 +133,7 @@ public class Util {
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Coordinates display set to: " + HIGHLIGHT + COORDS_OPTIONS[newMode] + RES;
+        return "Coordinates display set to: " + HIGHLIGHT + COORDS_OPTIONS[newMode] + RES + ".";
     }
 
     /** Returns string of player position. */
@@ -157,7 +157,7 @@ public class Util {
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Time display set to: " + HIGHLIGHT + TIME_OPTIONS[newMode] + RES;
+        return "Time display set to: " + HIGHLIGHT + TIME_OPTIONS[newMode] + RES + ".";
     }
 
     /** Converts minecraft internal clock to HH:mm string. */
@@ -210,7 +210,7 @@ public class Util {
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES;
+        return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES + ".";
     }
 
     /** Returns whether the player is in a bright biome for darkmode. */
@@ -230,7 +230,7 @@ public class Util {
         try {
             //Already there
             if (plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH).contains(b.toString())) {
-                return HIGHLIGHT + b.toString() + RES + " is already in the bright biomes list";
+                return HIGHLIGHT + b.toString() + RES + " is already in the bright biomes list.";
             }
             else {
                 //Add to HashMap
@@ -240,11 +240,11 @@ public class Util {
                 biomeList.add(b.toString());
                 plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
                 plugin.saveConfig();
-                return GREN + "Added " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list";
+                return GREN + "Added " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list.";
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ERROR + "Error while adding " + HIGHLIGHT + b.toString() + ERROR + " to bright biomes list";
+            return ERROR + "Error while adding " + HIGHLIGHT + b.toString() + ERROR + " to bright biomes list.";
         }
     }
 
@@ -258,14 +258,14 @@ public class Util {
                 plugin.saveConfig();
                 //Remove from HashMap
                 brightBiomes.remove(b);
-                return GREN + "Removed " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list";
+                return GREN + "Removed " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list.";
             }
             else {
-                return HIGHLIGHT + b.toString() + RES + " isn't in the biomes list";
+                return HIGHLIGHT + b.toString() + RES + " isn't in the bright biomes list.";
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ERROR + "Error while removing " + HIGHLIGHT + b.toString() + ERROR + " to the bright biome list";
+            return ERROR + "Error while removing " + HIGHLIGHT + b.toString() + ERROR + " to the bright biomes list.";
         }
     }
 
@@ -305,7 +305,7 @@ public class Util {
     /** Change how many ticks between each refresh. */
     static String setRefreshRate(long newRate) {
         try {
-            if (newRate == 0 || newRate > 40) return ERROR + "Number must be between 1 and 40 ticks";
+            if (newRate == 0 || newRate > 40) return ERROR + "Number must be between 1 and 40 ticks.";
             refreshRate = newRate;
             //Saves value for next time
             plugin.getConfig().set("refreshRate", refreshRate);
@@ -313,7 +313,7 @@ public class Util {
             //Stop task and restart with new refresh rate
             task.cancel();
             task = plugin.start(Util.plugin);
-            return "Refresh rate set to " + HIGHLIGHT + newRate;
+            return "Refresh rate set to " + HIGHLIGHT + newRate + RES + ".";
         }
         catch (Exception e) {
             e.printStackTrace();

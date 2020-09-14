@@ -1,7 +1,6 @@
 <p align="center"><img src="/img/thumbnailRect.png"></p>
 
 ## InfoHUD
-![banner](/img/banner.png) \
 Display coordinates and time to the player action bar. Inspired by the popular Coordinates HUD datapack. Find it at https://vanillatweaks.net/picker/datapacks/. \
 Version **1.0**.
 
@@ -18,13 +17,13 @@ Drag `InfoHUD.jar` in your plugins folder.
 The plugin should work for all versions 1.8+.
 
 ## Commands
-**Per player:**\
+**Per player (infohud.use):**\
 `/infohud <enable|disable>`: Enable/Disable InfoHUD for yourself.\
 `/infohud coordinates <disabled|enabled>`: Enable/Disable showing coordinates.\
 `/infohud time <disabled|currentTick|clock|villagerSchedule>`: How time should be displayed. Villager schedule only available 1.14+.\
-`/infohud darkMode <disabled|enabled|auto>`: Dark mode settings.\
+`/infohud darkMode <disabled|enabled|auto>`: Dark mode settings.
 
-**Global:**\
+**Global (infohud.admin):**\
 `/infohud refreshRate`: Change how quickly (ticks) the text is being refreshed.\
 `/infohud reload`: Reload settings (Reload config.yml).\
 `/infohud benchmark`: Display how long InfoHUD took to process the last update.\
@@ -44,7 +43,7 @@ brightBiomes: #Biomes where dark mode will turn on
 - BIOME_NAME
 - ...
 
-#Interval in ticks between each refresh. Lower for better performance.
+#Interval in ticks between each refresh. Higher for better performance.
 refreshRate: <number> {Default:5}
 
 #Settings on a per-player basis

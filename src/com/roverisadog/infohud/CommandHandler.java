@@ -39,7 +39,6 @@ public class CommandHandler implements TabExecutor {
                 send usage (CMD + CMD_ADMIN)
             else:
                 send usage CMD
-
         if normalCommand:
             if isPlayer:
                 if hasPerm(use):
@@ -48,9 +47,8 @@ public class CommandHandler implements TabExecutor {
                     send error missing perm
             else:
                 send error must be user
-
         else if adminCommand:
-            if hasPerm(admin):
+            if hasPerm(admin) OR isConsole:
                 try every admin commands
             else:
                 send error missing perm
@@ -67,7 +65,7 @@ public class CommandHandler implements TabExecutor {
                 sendMsg(sender, "Usage: " + Util.HIGHLIGHT + "/" + Util.CMD_NAME + " " + CMD.toString());
         }
 
-        if (CMD.contains(args[0])) {
+        else if (CMD.contains(args[0])) {
 
             if (sender instanceof Player) {
                 Player p = (Player) sender;

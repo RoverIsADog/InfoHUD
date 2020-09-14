@@ -2,7 +2,7 @@
 
 ## InfoHUD
 Display coordinates and time to the player action bar. Inspired by the popular Coordinates HUD datapack. Find it at https://vanillatweaks.net/picker/datapacks/. \
-Version **1.0**.
+Version **1.1**.
 
 ## Features
 Display your current coordinates.
@@ -38,6 +38,7 @@ The plugin should work for all versions 1.8+.
 #Find the list of biomes at https://minecraft.gamepedia.com/Biome#Biome_IDs.
 #Alternatively enter the biome name as it appears in the F3 menu, or use /infohud biome add
 #Must be in UPPERCASE. Eg. DEEP_FROZEN_OCEAN
+#Only biomes recognized by your MC version will be loaded.
 brightBiomes: #Biomes where dark mode will turn on
 - DESERT
 - BIOME_NAME

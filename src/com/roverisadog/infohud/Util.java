@@ -6,6 +6,7 @@ import java.util.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -14,6 +15,7 @@ import org.bukkit.scheduler.BukkitTask;
 public class Util {
     //Minecraft release 1.XX
     static int apiVersion;
+    static String serverVendor;
 
     //Plugin instance and currently running thread
     static BukkitTask task;
@@ -326,7 +328,7 @@ public class Util {
         Bukkit.getConsoleSender().sendMessage(Util.SIGNATURE + "[InfoHUD] " + Util.RES + msg);
     }
 
-    static String getBenchmark(){
+    static String getBenchmark() {
         return "InfoHUD took " + Util.HIGHLIGHT + String.format("%.3f", Util.benchmark/(1000000D)) + Util.RES +" ms (" + Util.HIGHLIGHT +
                 String.format("%.2f", Util.benchmark/(10000D) / 50D) + Util.RES + " % tick) during the last update.";
     }
@@ -339,5 +341,4 @@ public class Util {
         p.getHandle().playerConnection.sendPacket(ppoc);
     }
      */
-
 }

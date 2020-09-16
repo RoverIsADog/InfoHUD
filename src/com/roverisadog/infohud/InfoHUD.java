@@ -43,9 +43,11 @@ public class InfoHUD extends JavaPlugin {
             }
 
             //Version check and reflection attempt
-            this.versionStr = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3]; //Eg: org.bukkit.craftbukkit.v1_16_R2
-
+            String temp = Bukkit.getServer().getClass().getPackage().getName(); //Eg: org.bukkit.craftbukkit.v1_16_R2.blabla
+            this.versionStr = temp.split("\\.")[3];
             Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]);
+            Util.serverVendor = temp.split("\\.")[2];
+
             Util.print(Util.GREN + "NMS Version Detected: 1." + Util.apiVersion);
 
             if (!isCompatibleVersion() || !reflectionPackets()){

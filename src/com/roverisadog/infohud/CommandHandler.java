@@ -18,7 +18,7 @@ import javax.annotation.Nonnull;
 /** Handles command completion and execution. */
 public class CommandHandler implements TabExecutor {
     //Autocomplete choices
-    private final static List<String> CMD = Arrays.asList("enable", "disable", "coordinates", "time", "darkMode");
+    private final static List<String> CMD = Arrays.asList("enable", "disable", "coordinates", "time", "darkMode", "help");
     private final static List<String> CMD_ADMIN = Arrays.asList("refreshRate", "reload", "benchmark", "brightBiomes");
     private final static List<String> CMD_COORD = Arrays.asList("disabled", "enabled");
     private final static List<String> CMD_TIME = Arrays.asList("disabled", "currentTick", "clock", "villagerSchedule");
@@ -67,7 +67,12 @@ public class CommandHandler implements TabExecutor {
 
         else if (CMD.contains(args[0])) {
 
-            if (sender instanceof Player) {
+            //"help"
+            if (args[0].equalsIgnoreCase(CMD.get(5))) {
+                buildHelpMenu(sender);
+            }
+
+            else if (sender instanceof Player) {
                 Player p = (Player) sender;
 
                 if (p.hasPermission(Util.PERM_USE)){
@@ -256,10 +261,43 @@ public class CommandHandler implements TabExecutor {
         }
         return new ArrayList<>();
     }
+    //TODO make stopwatch command
 
     /** Send chat message to command sender. */
     static void sendMsg(CommandSender sender, String msg) {
         sender.sendMessage(Util.SIGNATURE + "[InfoHUD] " + Util.RES + msg);
+    }
+
+    static void buildHelpMenu(CommandSender sender) {
+        ArrayList<String> msg = new ArrayList<>();
+        if (sender instanceof Player) {
+            Player p = (Player) sender;
+            msg.add("============ " + Util.HIGHLIGHT + "InfoHUD 1.3 on " + Util.serverVendor + " 1." + Util.apiVersion + Util.RES + " ============");
+            if (Util.isEnabled((Player) sender)) {
+                msg.add("Currently " + Util.GREN + "enabled" + Util.RES + " for you with settings: ");
+                msg.add("   Coordinates: " + Util.HIGHLIGHT + CMD_COORD.get(Util.getCoordinatesMode(p)));
+                msg.add("   Time: " + Util.HIGHLIGHT + CMD_TIME.get(Util.getTimeMode(p)));
+                msg.add("   Dark Mode: " + Util.HIGHLIGHT + CMD_DARK.get(Util.getDarkMode(p)));
+            }
+            else msg.add("Currently " + Util.ERROR + "disabled" + Util.RES + " for you with settings: ");
+        }
+        msg.add(Util.HIGHLIGHT + "Settings");
+        if (sender.hasPermission(Util.PERM_USE)) {
+            msg.add("   Coordinates: " + Util.HIGHLIGHT + "Whether or not coordinates are displayed.");
+            msg.add("   Time: " + Util.HIGHLIGHT + "Under what format the time should be displayed (or not).");
+            msg.add("   Dark Mode: " + Util.HIGHLIGHT + "Whether or not to display info with darker colors.");
+        }
+        if (sender.hasPermission(Util.PERM_ADMIN)) {
+            msg.add("   Refresh Rate: " + Util.HIGHLIGHT + "Interval (in ticks) between each info update. Higher = better performance.");
+            msg.add("   Reload: " + Util.HIGHLIGHT + "Reloads config.yml. " + Util.ERROR + "YOU COULD LOSE SOME SETTINGS.");
+            msg.add("   Benchmark: " + Util.HIGHLIGHT + "How long the last update took. A tick is 50ms.");
+            msg.add("   Bright Biomes: " + Util.HIGHLIGHT + "Add/Remove biomes where dark mode turns on automatically.");
+        }
+
+
+        String[] msgArr = new String[msg.size()];
+        msgArr = msg.toArray(msgArr);
+        sender.sendMessage(msgArr);
     }
 
 }

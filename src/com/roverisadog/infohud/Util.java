@@ -1,25 +1,23 @@
 
 package com.roverisadog.infohud;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitTask;
 
 /** Helper class. */
 public class Util {
     //Minecraft release 1.XX
     static int apiVersion;
     static String serverVendor;
-
-    //Plugin instance and currently running thread
-    static BukkitTask task;
-    private static InfoHUD plugin;
 
     //Player management
     private static HashMap<UUID, Map<String, Object>> playerHash;
@@ -39,9 +37,9 @@ public class Util {
     static final String PERM_USE = "infohud.use";
     static final String PERM_ADMIN = "infohud.admin";
 
-    static final String HIGHLIGHT = ChatColor.YELLOW.toString();
+    static final String HLT = ChatColor.YELLOW.toString();
     static final String SIGNATURE = ChatColor.DARK_AQUA.toString();
-    static final String ERROR = ChatColor.RED.toString();
+    static final String ERR = ChatColor.RED.toString();
 
     static final String RES = ChatColor.RESET.toString();
     static final String WHI = ChatColor.WHITE.toString();
@@ -54,42 +52,48 @@ public class Util {
     private static long refreshRate;
     static long benchmark = 0;
 
+    /** Running plugin. */
+    static InfoHUD plugin;
+
     /** Loads disk contents of config.yml into memory. Returns false if an unhandled exception is found. */
-    public static boolean loadConfig(Plugin plu) {
+    static boolean loadConfig(InfoHUD instance) {
         try {
-            plu.reloadConfig();
-            Util.plugin = (InfoHUD) plu;
-            Util.refreshRate = plu.getConfig().getLong(REFRESH_RATE_PATH);
+            instance.reloadConfig();
+            Util.refreshRate = instance.getConfig().getLong(REFRESH_RATE_PATH);
             // Map< UUID , Map<String, Integer> > -- Loading players
             Util.playerHash = new HashMap<>();
-            for (String playerStr : plu.getConfig().getConfigurationSection(PLAYER_CFG_PATH).getKeys(false)) {
-                Util.playerHash.put(UUID.fromString(playerStr), plu.getConfig().getConfigurationSection(PLAYER_CFG_PATH + "." + playerStr).getValues(false) );
+            for (String playerStr : Objects.requireNonNull(instance.getConfig().getConfigurationSection(PLAYER_CFG_PATH)).getKeys(false)) {
+                Util.playerHash.put(UUID.fromString(playerStr), Objects.requireNonNull(instance.getConfig().getConfigurationSection(
+                        PLAYER_CFG_PATH + "." + playerStr)).getValues(false));
             }
-            Util.brightBiomes = new HashMap<>(); //Loading biomes
-            for (String cur : plu.getConfig().getStringList(BRIGHT_BIOMES_PATH)){
+            //Loading biomes
+            Util.brightBiomes = new HashMap<>();
+            for (String cur : instance.getConfig().getStringList(BRIGHT_BIOMES_PATH)) {
                 try {
                     Biome bio = Biome.valueOf(cur);
                     Util.brightBiomes.put(bio, null);
                 }
-                catch (Exception ignored) {} //Biome misspelled, nonexistent or from future version
+                catch (Exception ignored) { } //Biome misspelled, nonexistent or from future version
             }
             return true;
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
     /** Reloads content of config.yml */
-    static boolean reload(){
+    static boolean reload() {
         boolean b;
         try {
-            task.cancel();
+            plugin.task.cancel();
             b = loadConfig(plugin);
-            task = plugin.start(Util.plugin);
+            plugin.task = plugin.start(plugin);
             return b;
         }
-        catch(Exception e){ return false; }
+        catch (Exception e) {
+            return false;
+        }
     }
 
     /* ---------------------------------------------------------------------- Player Management ---------------------------------------------------------------------- */
@@ -110,7 +114,7 @@ public class Util {
         //Saves changes
         plugin.getConfig().set(PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
         plugin.saveConfig();
-        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
+        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERR + "disabled") + RES + ".";
     }
 
     /** Removes player UUID from player list. */
@@ -119,7 +123,7 @@ public class Util {
         //Saves changes
         plugin.getConfig().set(PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
         plugin.saveConfig();
-        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERROR + "disabled") + RES + ".";
+        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERR + "disabled") + RES + ".";
     }
 
     /* ---------------------------------------------------------------------- COORDINATES ---------------------------------------------------------------------- */
@@ -130,16 +134,16 @@ public class Util {
     }
 
     /** Changes coordinates mode and returns new mode. */
-    static String setCoordinatesMode(Player p, int newMode){
+    static String setCoordinatesMode(Player p, int newMode) {
         playerHash.get(p.getUniqueId()).put("coordinatesMode", newMode);
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Coordinates display set to: " + HIGHLIGHT + COORDS_OPTIONS[newMode] + RES + ".";
+        return "Coordinates display set to: " + HLT + COORDS_OPTIONS[newMode] + RES + ".";
     }
 
     /** Returns string of player position. */
-    static String getCoordinatesStr(Player p){
+    static String getCoordinatesStr(Player p) {
         return p.getLocation().getBlockX() + " " + p.getLocation().getBlockY() + " " + p.getLocation().getBlockZ();
     }
 
@@ -151,21 +155,21 @@ public class Util {
     }
 
     /** Changes time mode and returns new mode. */
-    static String setTimeMode(Player p, int newMode){
+    static String setTimeMode(Player p, int newMode) {
         if (newMode == 3 &&  apiVersion < 14)
-            return ERROR + "Villager schedule display is meaningless for versions before 1.14.";
+            return ERR + "Villager schedule display is meaningless for versions before 1.14.";
 
         playerHash.get(p.getUniqueId()).put("timeMode", newMode);
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Time display set to: " + HIGHLIGHT + TIME_OPTIONS[newMode] + RES + ".";
+        return "Time display set to: " + HLT + TIME_OPTIONS[newMode] + RES + ".";
     }
 
     /** Converts minecraft internal clock to HH:mm string. */
-    static String getTime24(long time){
+    static String getTime24(long time) {
         //MC day starts at 6:00: https://minecraft.gamepedia.com/Daylight_cycle
-        String timeH = Long.toString((time/1000L + 6L) % 24L);
+        String timeH = Long.toString((time / 1000L + 6L) % 24L);
         String timeM = String.format("%02d", time % 1000L * 60L / 1000L);
         return timeH + ":" + timeM;
     }
@@ -173,29 +177,29 @@ public class Util {
     /** Returns current villager schedule and time before change. */
     static String getVillagerTimeLeft(long time, String col1, String col2) {
         //Sleeping 12000 - 0
-        if (time > 12000L){
+        if (time > 12000L) {
             long remaining = 12000L - time + 12000L;
-            return col1 + "Sleep: " + col2 + remaining/1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
+            return col1 + "Sleep: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
         }
         //Wandering 11000 - 12000
-        else if (time > 11000L){
+        else if (time > 11000L) {
             long remaining = 1000L - time + 11000L;
-            return col1 + "Wander: " + col2 + remaining/1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
+            return col1 + "Wander: " + col2 + 0 + ":" + String.format("%02d", remaining % 1200L / 20L);
         }
         //Gathering 9000 - 11000
-        else if (time > 9000L){
+        else if (time > 9000L) {
             long remaining = 2000L - time + 9000L;
-            return col1 + "Gather: " + col2 + remaining/1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
+            return col1 + "Gather: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
         }
         //Working 2000 - 9000
-        else if (time > 2000L){
+        else if (time > 2000L) {
             long remaining = 7000L - time + 2000L;
-            return col1 + "Work: " + col2 + remaining/1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
+            return col1 + "Work: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
         }
         //Wandering 0 - 2000
-        else{
+        else {
             long remaining = 2000L - time;
-            return col1 + "Wander: " + col2 + remaining/1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
+            return col1 + "Wander: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
         }
     }
 
@@ -207,12 +211,12 @@ public class Util {
     }
 
     /** Changes dark mode settings and returns new settings. */
-    static String setDarkMode(Player p, int newMode){
+    static String setDarkMode(Player p, int newMode) {
         playerHash.get(p.getUniqueId()).put("darkMode", newMode);
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Dark mode set to: " + HIGHLIGHT + DARK_OPTIONS[newMode] + RES + ".";
+        return "Dark mode set to: " + HLT + DARK_OPTIONS[newMode] + RES + ".";
     }
 
     /** Returns whether the player is in a bright biome for darkmode. */
@@ -222,17 +226,21 @@ public class Util {
 
     /** Get a list of all bright biomes currently recognized. Not the same as all bright biomes
      * on file as some may not be recognized by older/newer minecraft versions. */
-    static ArrayList<String> getBrightBiomesList(){
+    static ArrayList<String> getBrightBiomesList() {
         ArrayList<String> biomeList = new ArrayList<>();
         for (Biome b : brightBiomes.keySet()) biomeList.add(b.toString());
         return biomeList;
     }
 
+    /**
+     * Adds a biome from the bright biomes list.
+     * @return Small message confirming status.
+     */
     static String addBrightBiome(Biome b) {
         try {
             //Already there
             if (plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH).contains(b.toString())) {
-                return HIGHLIGHT + b.toString() + RES + " is already in the bright biomes list.";
+                return HLT + b.toString() + RES + " is already in the bright biomes list.";
             }
             else {
                 //Add to HashMap
@@ -242,14 +250,18 @@ public class Util {
                 biomeList.add(b.toString());
                 plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
                 plugin.saveConfig();
-                return GREN + "Added " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list.";
+                return GREN + "Added " + HLT + b.toString() + GREN + " to the bright biomes list.";
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ERROR + "Error while adding " + HIGHLIGHT + b.toString() + ERROR + " to bright biomes list.";
+            return ERR + "Error while adding " + HLT + b.toString() + ERR + " to bright biomes list.";
         }
     }
 
+    /**
+     * Removes a biome from the bright biomes list.
+     * @return Small message confirming status.
+     */
     static String removeBrightBiome(Biome b) {
         try {
             if (plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH).contains(b.toString())) {
@@ -260,26 +272,28 @@ public class Util {
                 plugin.saveConfig();
                 //Remove from HashMap
                 brightBiomes.remove(b);
-                return GREN + "Removed " + HIGHLIGHT + b.toString() + GREN + " to the bright biomes list.";
+                return GREN + "Removed " + HLT + b.toString() + GREN + " to the bright biomes list.";
             }
             else {
-                return HIGHLIGHT + b.toString() + RES + " isn't in the bright biomes list.";
+                return HLT + b.toString() + RES + " isn't in the bright biomes list.";
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ERROR + "Error while removing " + HIGHLIGHT + b.toString() + ERROR + " to the bright biomes list.";
+            return ERR + "Error while removing " + HLT + b.toString() + ERR + " to the bright biomes list.";
         }
     }
 
     /* ---------------------------------------------------------------------- Direction  ---------------------------------------------------------------------- */
 
-    /** Calculates direction the player is facing and returns corresponding string. */
+    /**
+     * Calculates cardinal direction the player is facing.
+     * @return Small message indicating cardinal direction.
+     */
     static String getPlayerDirection(Player player) {
         //-180: Leaning left | +180: Leaning right
         float yaw = player.getLocation().getYaw();
         //Bring to 360 degrees (Clockwise from -X axis)
-        if (yaw < 0.0F)
-            yaw += 360.0F;
+        if (yaw < 0.0F) yaw += 360.0F;
         //Separate into 8 sectors (Arc: 45deg), offset by 1/2 sector (Arc: 22.5deg)
         int sector = (int) ((yaw + 22.5F) / 45F);
         switch (sector) {
@@ -299,27 +313,31 @@ public class Util {
 
     /* ---------------------------------------------------------------------- Admin ---------------------------------------------------------------------- */
 
-    /** How many tick between each refresh. Values higher than 20 may lead to actionbar text fading. */
+    /** How many tick between each refresh. */
     static long getRefreshRate() {
         return refreshRate;
     }
 
-    /** Change how many ticks between each refresh. */
+    /**
+     * Change how many ticks between each refresh. Values higher than 20 may lead to actionbar text fading.
+     * Stops current task and starts a new one with updated value.
+     * @return Small message indicating updated state.
+     */
     static String setRefreshRate(long newRate) {
         try {
-            if (newRate == 0 || newRate > 40) return ERROR + "Number must be between 1 and 40 ticks.";
+            if (newRate <= 0 || newRate > 40) return ERR + "Number must be between 1 and 40 ticks.";
             refreshRate = newRate;
             //Saves value for next time
             plugin.getConfig().set("refreshRate", refreshRate);
             plugin.saveConfig();
             //Stop task and restart with new refresh rate
-            task.cancel();
-            task = plugin.start(Util.plugin);
-            return "Refresh rate set to " + HIGHLIGHT + newRate + RES + ".";
+            plugin.task.cancel();
+            plugin.task = plugin.start(plugin);
+            return "Refresh rate set to " + HLT + newRate + RES + ".";
         }
         catch (Exception e) {
             e.printStackTrace();
-            return ERROR + "Error while changing refresh rate.";
+            return ERR + "Error while changing refresh rate.";
         }
     }
 
@@ -328,17 +346,12 @@ public class Util {
         Bukkit.getConsoleSender().sendMessage(Util.SIGNATURE + "[InfoHUD] " + Util.RES + msg);
     }
 
-    static String getBenchmark() {
-        return "InfoHUD took " + Util.HIGHLIGHT + String.format("%.3f", Util.benchmark/(1000000D)) + Util.RES +" ms (" + Util.HIGHLIGHT +
-                String.format("%.2f", Util.benchmark/(10000D) / 50D) + Util.RES + " % tick) during the last update.";
-    }
-
-    /*
-    static void sendToActionBar(Player player, String msg){
-        CraftPlayer p = (CraftPlayer) player;
-        IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
-        PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
-        p.getHandle().playerConnection.sendPacket(ppoc);
-    }
+    /**
+     * Gets how much time the last update took.
+     * @return Small message indicating status.
      */
+    static String getBenchmark() {
+        return "InfoHUD took " + Util.HLT + String.format("%.3f", Util.benchmark / (1000000D)) + Util.RES + " ms (" + Util.HLT +
+                String.format("%.2f", Util.benchmark / (10000D) / 50D) + Util.RES + " % tick) during the last update.";
+    }
 }

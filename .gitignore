@@ -1,21 +1,37 @@
-/.git
+#Non IDE Residue
+.git/
+.DS_Store
+tmp/
 
 #Eclipse
-/metadata
-/.metadata
-/.settings
-/bin
-/.classpath
-/.project
+.project
+.classpath
+
+metadata/
+.metadata/
+.settings/
+bin/
 
 #IntelliJ
-/.idea
+.idea/
+.idea/*
 *.iml
-/out
+out/
 
-#Visual Studio
-/.vs
-/Debug
+#Visual Studio / VS Code
+.vs/
+Debug/
+.vscode/
+*.sln
+*.vcxproj
+*.vcxproj*
 
 #Project Specific
-/lib
+lib/
+
+# Maven
+target/
+
+#Checkstyle
+.checkstyle
+/style

@@ -82,7 +82,7 @@ public class Util {
         }
     }
 
-    /** Reloads content of config.yml */
+    /** Reloads content of config.yml. */
     static boolean reload() {
         boolean b;
         try {
@@ -226,9 +226,11 @@ public class Util {
 
     /** Get a list of all bright biomes currently recognized. Not the same as all bright biomes
      * on file as some may not be recognized by older/newer minecraft versions. */
-    static ArrayList<String> getBrightBiomesList() {
-        ArrayList<String> biomeList = new ArrayList<>();
-        for (Biome b : brightBiomes.keySet()) biomeList.add(b.toString());
+    static List<String> getBrightBiomesList() {
+        List<String> biomeList = new ArrayList<>();
+        for (Biome b : brightBiomes.keySet()) {
+            biomeList.add(b.toString());
+        }
         return biomeList;
     }
 

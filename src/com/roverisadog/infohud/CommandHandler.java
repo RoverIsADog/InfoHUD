@@ -9,23 +9,24 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.bukkit.block.Biome;
-import org.bukkit.command.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.util.StringUtil;
 
-import javax.annotation.Nonnull;
-
 /** Handles command completion and execution. */
 public class CommandHandler implements TabExecutor {
     //Autocomplete choices
-    private final static List<String> CMD = Arrays.asList("enable", "disable", "coordinates", "time", "darkMode", "help");
-    private final static List<String> CMD_ADMIN = Arrays.asList("refreshRate", "reload", "benchmark", "brightBiomes");
-    private final static List<String> CMD_COORD = Arrays.asList("disabled", "enabled");
-    private final static List<String> CMD_TIME = Arrays.asList("disabled", "currentTick", "clock", "villagerSchedule");
-    private final static List<String> CMD_DARK = Arrays.asList("disabled", "enabled", "auto");
-    private final static List<String> CMD_BIOMES = Arrays.asList("add", "remove");
-    private final static List<String> BIOME_LIST = new ArrayList<>();
+    private static final List<String> CMD = Arrays.asList("enable", "disable", "coordinates", "time", "darkMode", "help");
+    private static final List<String> CMD_ADMIN = Arrays.asList("refreshRate", "reload", "benchmark", "brightBiomes");
+    private static final List<String> CMD_COORD = Arrays.asList("disabled", "enabled");
+    private static final List<String> CMD_TIME = Arrays.asList("disabled", "currentTick", "clock", "villagerSchedule");
+    private static final List<String> CMD_DARK = Arrays.asList("disabled", "enabled", "auto");
+    private static final List<String> CMD_BIOMES = Arrays.asList("add", "remove");
+    private static final List<String> BIOME_LIST = new ArrayList<>();
 
     /** Instance of the plugin. */
     private final Plugin plu;
@@ -36,8 +37,11 @@ public class CommandHandler implements TabExecutor {
         this.plu = plu;
     }
 
+    /**
+     * Carries out commands.
+     */
     @Override
-    public boolean onCommand(@Nonnull CommandSender sender, @Nonnull Command command, @Nonnull String label, @Nonnull String[] args) {
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         /*
         if args.length == 0:
             if admin:
@@ -247,17 +251,21 @@ public class CommandHandler implements TabExecutor {
 
     /** Tab completer. */
     @Override
-    public List<String> onTabComplete(@Nonnull CommandSender sender, @Nonnull Command command, @Nonnull String alias, @Nonnull String[] args) {
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         boolean isPlayer = sender instanceof Player;
         boolean isConsole = sender instanceof ConsoleCommandSender;
 
-        if (isPlayer && !sender.hasPermission(Util.PERM_USE)) return new ArrayList<>();
+        if (isPlayer && !sender.hasPermission(Util.PERM_USE)) {
+            return new ArrayList<>();
+        }
 
         else if (args.length == 1) {
-            if (isConsole || sender.hasPermission(Util.PERM_ADMIN))
+            if (isConsole || sender.hasPermission(Util.PERM_ADMIN)) {
                 return StringUtil.copyPartialMatches(args[0], Stream.concat(CMD.stream(), CMD_ADMIN.stream()).collect(Collectors.toList()), new ArrayList<>());
-            else
+            }
+            else {
                 return StringUtil.copyPartialMatches(args[0], CMD, new ArrayList<>());
+            }
         }
         else if (args.length == 2) {
             //"coordinates"
@@ -290,7 +298,7 @@ public class CommandHandler implements TabExecutor {
                 }
                 //"brightBiomes remove"
                 else if (args[1].equalsIgnoreCase(CMD_BIOMES.get(1))) {
-                    ArrayList<String> temp = Util.getBrightBiomesList();
+                    List<String> temp = Util.getBrightBiomesList();
                     temp.add("here");
                     return StringUtil.copyPartialMatches(args[2], temp, new ArrayList<>());
                 }

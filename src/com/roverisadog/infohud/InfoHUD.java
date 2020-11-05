@@ -270,5 +270,4 @@ public class InfoHUD extends JavaPlugin {
             Util.benchmark = System.nanoTime() - bmStart;
         }, 0L, Util.getRefreshRate());
     }
-
 }

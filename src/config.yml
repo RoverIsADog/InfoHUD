@@ -1,4 +1,5 @@
-refreshRate: 5
+infohudVersion: '1.3'
+refreshPeriod: 5
 brightBiomes:
 - DESERT
 - DESERT_HILLS

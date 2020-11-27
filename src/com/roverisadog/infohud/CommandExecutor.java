@@ -117,31 +117,19 @@ public class CommandExecutor implements TabExecutor {
                 return true;
             }
 
-            boolean enabled = Util.isEnabled(p);
-
             // [/infohud enable]
             if (args[0].equalsIgnoreCase(CMD_NORMAL.get(0))) {
-                if (!enabled) {
-                    sendMsg(p, Util.savePlayer(p));
-                }
-                else {
-                    sendMsg(p, Util.HLT + "InfoHUD was already enabled.");
-                }
+                sendMsg(p, PlayerCfg.savePlayer(p));
                 return true;
             }
 
             // [/infohud disable]
             else if (args[0].equalsIgnoreCase(CMD_NORMAL.get(1))) {
-                if (enabled) {
-                    sendMsg(p, Util.removePlayer(p));
-                }
-                else {
-                    sendMsg(p, Util.HLT + "InfoHUD was already disabled.");
-                }
+                sendMsg(p, PlayerCfg.removePlayer(p));
                 return true;
             }
 
-            else if (!enabled) {
+            else if (!PlayerCfg.isEnabled(p)) {
                 sendMsg(p, "Enable InfoHUD with " + Util.HLT + "/" + Util.CMD_NAME + " " + CMD_NORMAL.get(0) + Util.RES + " first.");
                 return true;
             }
@@ -163,6 +151,10 @@ public class CommandExecutor implements TabExecutor {
             return true;
         }
 
+        else if (args[0].equalsIgnoreCase("number")) {
+            sendMsg(sender, Util.getNumber() + "Players registered");
+        }
+
         //Admin command
         else if (CMD_ADMIN.contains(args[0])) {
 
@@ -177,12 +169,12 @@ public class CommandExecutor implements TabExecutor {
             if (args[0].equalsIgnoreCase(CMD_ADMIN.get(0))) {
                 //No number
                 if (args.length < 2) {
-                    sendMsg(sender, "Refresh rate is currently: " + Util.HLT + Util.getRefreshRate() + " ticks.");
+                    sendMsg(sender, "Refresh rate is currently: " + Util.HLT + Util.getRefreshPeriod() + " ticks.");
                 }
                 //Gives number
                 else {
                     try {
-                        sendMsg(sender, Util.setRefreshRate(Long.parseLong(args[1])));
+                        sendMsg(sender, Util.setRefreshPeriod(Long.parseLong(args[1])));
                     } catch (NumberFormatException e) {
                         sendMsg(sender, Util.ERR + "Please enter a positive integer between 1 and 40.");
                     }
@@ -246,7 +238,7 @@ public class CommandExecutor implements TabExecutor {
             //"coordinates"
             if (CoordMode.cmdName.equalsIgnoreCase(args[0])) {
                 return (isPlayer)
-                        ? StringUtil.copyPartialMatches(args[1], CoordMode.stringList, new ArrayList<>())
+                        ? StringUtil.copyPartialMatches(args[1], CoordMode.optionsList, new ArrayList<>())
                         : new ArrayList<>(); //Void if not player.
             }
             //"time"
@@ -294,7 +286,7 @@ public class CommandExecutor implements TabExecutor {
 
     /** Send chat message to command sender. */
     private void sendMsg(CommandSender sender, String msg) {
-        sender.sendMessage(Util.SIGNATURE + "[InfoHUD] " + Util.RES + msg);
+        sender.sendMessage(Util.SIGN + "[InfoHUD] " + Util.RES + msg);
     }
 
     private void buildHelpMenu(CommandSender sender) {
@@ -307,15 +299,15 @@ public class CommandExecutor implements TabExecutor {
             Player p = (Player) sender;
             msg.add("");
             msg.add("Currently "
-                    + (Util.isEnabled(p) ? Util.GRN + "enabled" : Util.ERR + "disabled")
+                    + (PlayerCfg.isEnabled(p) ? Util.GRN + "enabled" : Util.ERR + "disabled")
                     + Util.RES + " for "
                     + (p.hasPermission(Util.PERM_ADMIN) ? p.getDisplayName() + Util.GRN + " (ADMIN)"
                     : p.getDisplayName()));
 
-            if (Util.isEnabled((Player) sender)) {
-                msg.add(Util.HLT + "   coordinates: " + Util.RES + CoordMode.get(Util.getCoordinatesMode(p)));
-                msg.add(Util.HLT + "   time: " + Util.RES + TimeMode.get(Util.getTimeMode(p)));
-                msg.add(Util.HLT + "   darkMode: " + Util.RES + DarkMode.get(Util.getDarkMode(p)));
+            if (PlayerCfg.isEnabled((Player) sender)) {
+                msg.add(Util.HLT + "   coordinates: " + Util.RES + PlayerCfg.getCoordinatesMode(p));
+                msg.add(Util.HLT + "   time: " + Util.RES + PlayerCfg.getTimeMode(p));
+                msg.add(Util.HLT + "   darkMode: " + Util.RES + PlayerCfg.getDarkMode(p));
             }
         }
 
@@ -347,14 +339,14 @@ public class CommandExecutor implements TabExecutor {
     private boolean setCoordinates(Player p, String[] args, int argsStart) {
         //No argument
         if (args.length < argsStart + 1) {
-            sendMsg(p, "Coordinates display is currently set to: " + Util.HLT + Util.COORDS_OPTIONS[Util.getCoordinatesMode(p)]);
+            sendMsg(p, "Coordinates display is currently set to: " + Util.HLT + PlayerCfg.getCoordinatesMode(p));
             return true;
         }
 
         //Cycle through all coordinate modes
         for (CoordMode cm : CoordMode.values()) {
             if (cm.name.equalsIgnoreCase(args[argsStart])) {
-                sendMsg(p, Util.setCoordinatesMode(p, cm));
+                sendMsg(p, PlayerCfg.setCoordinatesMode(p, cm));
                 return true;
             }
         }
@@ -368,14 +360,14 @@ public class CommandExecutor implements TabExecutor {
     private boolean setTime(Player p, String[] args, int argsStart) {
         //No argument
         if (args.length < argsStart + 1) {
-            sendMsg(p, "Time display is currently set to: " + Util.HLT + Util.TIME_OPTIONS[Util.getTimeMode(p)]);
+            sendMsg(p, "Time display is currently set to: " + Util.HLT + PlayerCfg.getTimeMode(p));
             return true;
         }
 
         //Cycle through all time modes
         for (TimeMode tm : TimeMode.values()) {
             if (tm.name.equalsIgnoreCase(args[argsStart])) {
-                sendMsg(p, Util.setTimeMode(p, tm));
+                sendMsg(p, PlayerCfg.setTimeMode(p, tm));
                 return true;
             }
         }
@@ -389,14 +381,14 @@ public class CommandExecutor implements TabExecutor {
     private boolean setDarkMode(Player p, String[] args, int argsStart) {
         //No argument
         if (args.length < argsStart + 1) {
-            sendMsg(p, "Dark mode is currently set to: " + Util.HLT + Util.DARK_OPTIONS[Util.getDarkMode(p)]);
+            sendMsg(p, "Dark mode is currently set to: " + Util.HLT + PlayerCfg.getDarkMode(p));
             return true;
         }
 
         //Cycle through all time modes
         for (DarkMode dm : DarkMode.values()) {
             if (dm.name.equalsIgnoreCase(args[argsStart])) {
-                sendMsg(p, Util.setDarkMode(p, dm));
+                sendMsg(p, PlayerCfg.setDarkMode(p, dm));
                 return true;
             }
         }

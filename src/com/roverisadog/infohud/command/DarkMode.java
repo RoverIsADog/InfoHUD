@@ -11,10 +11,10 @@ public enum DarkMode {
     AUTO(2, "auto");
 
     public static List<String> stringList = Arrays.stream(DarkMode.values())
-            .map(DarkMode::getName)
+            .map(DarkMode::name)
             .collect(Collectors.toList());
     public static String cmdName = "darkMode";
-    public static String cfgName = "darkMode";
+    public static String cfgKey = "darkMode";
 
     public int id;
     public String name;
@@ -24,17 +24,20 @@ public enum DarkMode {
         this.name = name;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
     public static DarkMode get(int id) {
         for (DarkMode dm : DarkMode.values()) {
-            return dm;
+            if (dm.id == id) {
+                return dm;
+            }
+        }
+        return null;
+    }
+
+    public static DarkMode get(String id) {
+        for (DarkMode dm : DarkMode.values()) {
+            if (dm.name.equalsIgnoreCase(id)) {
+                return dm;
+            }
         }
         return null;
     }

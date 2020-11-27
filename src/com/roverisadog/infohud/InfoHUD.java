@@ -20,7 +20,7 @@ public class InfoHUD extends JavaPlugin {
     //import net.minecraft.server.v1_16_R2.PacketPlayOutChat;
     //import org.bukkit.craftbukkit.v1_16_R2.entity.CraftPlayer;
 
-    //Reflected classes for NMS packets.
+    //Reflected objects for NMS packets.
     private Class<?> CraftPlayer_CLASS;
     private Field playerConnection_FIELD;
     private Method getHandle_MET, sendPacket_MET;
@@ -41,7 +41,7 @@ public class InfoHUD extends JavaPlugin {
     public void onEnable() {
         try {
             Util.plugin = this;
-            Util.print(Util.GREN + "InfoHUD Enabling...");
+            Util.print(Util.GRN + "InfoHUD Enabling...");
 
             //Save initial cfg or load.
             this.saveDefaultConfig(); //Silent fails if config.yml already exists
@@ -61,10 +61,10 @@ public class InfoHUD extends JavaPlugin {
             }
 
             //Setup command
-            Objects.requireNonNull(this.getCommand(Util.CMD_NAME)).setExecutor(new CommandHandler(this));
+            Objects.requireNonNull(this.getCommand(Util.CMD_NAME)).setExecutor(new CommandExecutor(this));
 
             task = start(this);
-            Util.print(Util.GREN + "InfoHUD Successfully Enabled. " + Util.WHI + "NMS Version Detected: 1." + Util.apiVersion);
+            Util.print(Util.GRN + "InfoHUD Successfully Enabled. " + Util.WHI + "NMS Version Detected: 1." + Util.apiVersion);
         }
         catch (Exception e) {
             Util.print(e.getMessage());
@@ -90,9 +90,11 @@ public class InfoHUD extends JavaPlugin {
             //org.bukkit.craftbukkit.VERSION.entity.CraftPlayer; | CraftPlayer p = (CraftPlayer) player;
             CraftPlayer_CLASS = Class.forName("org.bukkit.craftbukkit." + versionStr + ".entity.CraftPlayer");
             //import net.minecraft.server.v1_16_R2.IChatBaseComponent;
-            Class<?> IChatBaseComponent_CLASS = Class.forName("net.minecraft.server." + versionStr + ".IChatBaseComponent");
+            Class<?> IChatBaseComponent_CLASS = Class
+                    .forName("net.minecraft.server." + versionStr + ".IChatBaseComponent");
 
-            //Used to get Player.sendPackets -> p.getHandle().playerConnection.sendPacket(ppoc); PPOC is instance of packet.
+            //Used to get Player.sendPackets -> p.getHandle().playerConnection.sendPacket(ppoc);
+            //PPOC is instance of packet.
             Class<?> packet_CLASS = Class.forName("net.minecraft.server." + versionStr + ".Packet");
 
             //Get methods and fields from sending packet line -> //p.getHandle().playerConnection.sendPacket(ppoc);
@@ -106,32 +108,45 @@ public class InfoHUD extends JavaPlugin {
 
             //import net.minecraft.server.VERSION.IChatBaseComponent;
             //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
-            Class<?> packetPlayOutChat_CLASS = Class.forName("net.minecraft.server." + versionStr + ".PacketPlayOutChat");
+            Class<?> packetPlayOutChat_CLASS = Class
+                    .forName("net.minecraft.server." + versionStr + ".PacketPlayOutChat");
 
             Class<?> chatMessageType_CLASS;
-            if (Util.apiVersion < 12) { //1.8 - 1.11
-                //1.8 - 1.11 : PacketPlayOutChat(IChatBaseComponent, byte)
-                PacketPlayOutChat_CONST = packetPlayOutChat_CLASS.getConstructor(IChatBaseComponent_CLASS, byte.class);
+
+            //1.8 - 1.11
+            if (Util.apiVersion < 12) {
+                // 1.8 - 1.11 : PacketPlayOutChat(IChatBaseComponent, byte)
+                PacketPlayOutChat_CONST = packetPlayOutChat_CLASS
+                        .getConstructor(IChatBaseComponent_CLASS, byte.class);
             }
-            else if (Util.apiVersion < 16) { //1.12 - 1.15
-                //import net.minecraft.server.v1_16_R2.ChatMessageType;
-                chatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
-                //ChatMessageType.GAME_INFO -> 2 | PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
+            //1.12 - 1.15
+            else if (Util.apiVersion < 16) {
+                // import net.minecraft.server.v1_16_R2.ChatMessageType;
+                chatMessageType_CLASS = Class
+                        .forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
+                // ChatMessageType.GAME_INFO -> 2
+                // PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                 CHATMESSAGETYPE_ENUM = chatMessageType_CLASS.getEnumConstants()[2];
                 //1.12 - 1.16 : PacketPlayOutChat(IChatBaseComponent, ChatMessageType)
-                PacketPlayOutChat_CONST = packetPlayOutChat_CLASS.getConstructor(IChatBaseComponent_CLASS, chatMessageType_CLASS);
+                PacketPlayOutChat_CONST = packetPlayOutChat_CLASS
+                        .getConstructor(IChatBaseComponent_CLASS, chatMessageType_CLASS);
             }
-            else { //1.16 - ?.?? TODO check if changed each update
+            //1.16 - ?.?? TODO check if changed each update
+            else {
                 //import net.minecraft.server.v1_16_R2.ChatMessageType;
-                chatMessageType_CLASS = Class.forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
-                //ChatMessageType.GAME_INFO -> 2 | PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
+                chatMessageType_CLASS = Class
+                        .forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
+                //ChatMessageType.GAME_INFO -> 2nd index
+                //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                 CHATMESSAGETYPE_ENUM = chatMessageType_CLASS.getEnumConstants()[2];
                 //1.16 - ?.?? : PacketPlayOutChat(IChatBaseComponent, ChatMessageType, UUID)
-                PacketPlayOutChat_CONST = packetPlayOutChat_CLASS.getConstructor(IChatBaseComponent_CLASS, chatMessageType_CLASS, UUID.class);
+                PacketPlayOutChat_CONST = packetPlayOutChat_CLASS
+                        .getConstructor(IChatBaseComponent_CLASS, chatMessageType_CLASS, UUID.class);
             }
 
         } catch (Exception e) { //ReflectionError
-            Util.print(Util.ERR + "Exception while initializing packets with NMS version 1." + versionStr + ". Version may be incompatible.");
+            Util.print(Util.ERR + "Exception while initializing packets with NMS version 1."
+                    + versionStr + ". Version may be incompatible.");
             e.printStackTrace();
             return false;
         }
@@ -148,15 +163,21 @@ public class InfoHUD extends JavaPlugin {
             //IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
             Object icbc = ChatMessage_CONST.newInstance(msg, new Object[0]);
 
-            //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, UUID);
+            //PacketPlayOutChat ppoc =
             Object packet;
+            //1.8 - 1.11
             if (Util.apiVersion < 12) {
+                //= new PacketPlayOutChat(icbc, byte);
                 packet = PacketPlayOutChat_CONST.newInstance(icbc, (byte) 2);
             }
-            else if (Util.apiVersion < 16) { //1.12 - 1.16
+            //1.12 - 1.16
+            else if (Util.apiVersion < 16) {
+                //= new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO);
                 packet = PacketPlayOutChat_CONST.newInstance(icbc, CHATMESSAGETYPE_ENUM);
             }
-            else { //1.16 - ?.?? TODO check if changed each update
+            //1.16 - ?.?? TODO check if changed each update
+            else {
+                //= new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, UUID);
                 packet = PacketPlayOutChat_CONST.newInstance(icbc, CHATMESSAGETYPE_ENUM, p.getUniqueId());
             }
             /* CraftPlayer p = (CraftPlayer) player; */
@@ -182,7 +203,7 @@ public class InfoHUD extends JavaPlugin {
     /** Clean up while shutting down (Currently nothing). */
     @Override
     public void onDisable() {
-        Util.print(Util.GREN + "InfoHUD Disabled");
+        Util.print(Util.GRN + "InfoHUD Disabled");
     }
 
     /**
@@ -194,11 +215,13 @@ public class InfoHUD extends JavaPlugin {
         return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             bmStart = System.nanoTime();
             for (Player p : plugin.getServer().getOnlinePlayers()) {
+
                 //Skip players that are not on the list
                 if (!Util.isEnabled(p)) {
                     continue;
                 }
-                /* Assumes that online players << saved players */
+
+                //Assumes that online players << saved players
 
                 int coordsMode = Util.getCoordinatesMode(p);
                 int timeMode = Util.getTimeMode(p);
@@ -242,9 +265,14 @@ public class InfoHUD extends JavaPlugin {
                         //Display coords and villager timer
                         case 3:
                             sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinatesStr(p) + " " +
-                                col1 + String.format("%-10s", Util.getPlayerDirection(p)) + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
+                                col1 + String.format("%-10s", Util.getPlayerDirection(p)) + Util.getVillagerTime(p.getWorld().getTime(), col1, col2));
+                            break;
+                        //Display coords and time in hh:mm HH
+                        case 4:
+                            sendToActionBar(p, col1 + "XYZ: " + col2 + Util.getCoordinatesStr(p) + " " +
+                                    col1 + String.format("%-10s", Util.getPlayerDirection(p)) + col2 + Util.getTime12(p.getWorld().getTime()));
+                            break;
                         default:
-
                     }
                 }
 
@@ -261,7 +289,11 @@ public class InfoHUD extends JavaPlugin {
                             break;
                         //Display villager timer
                         case 3:
-                            sendToActionBar(p, col2 + Util.getVillagerTimeLeft(p.getWorld().getTime(), col1, col2));
+                            sendToActionBar(p, col2 + Util.getVillagerTime(p.getWorld().getTime(), col1, col2));
+                            break;
+                        //Display time in hh:mm HH
+                        case 4:
+                            sendToActionBar(p, col2 + Util.getTime12(p.getWorld().getTime()));
                             break;
                         default:
                     }

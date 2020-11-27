@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import com.roverisadog.infohud.command.CoordMode;
+import com.roverisadog.infohud.command.DarkMode;
+import com.roverisadog.infohud.command.TimeMode;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
@@ -46,7 +49,7 @@ public class Util {
     static final String GLD = ChatColor.GOLD.toString();
     static final String DAQA = ChatColor.DARK_AQUA.toString();
     static final String DBLU = ChatColor.DARK_BLUE.toString();
-    static final String GREN = ChatColor.GREEN.toString();
+    static final String GRN = ChatColor.GREEN.toString();
 
     //Performance
     private static long refreshRate;
@@ -107,14 +110,14 @@ public class Util {
     static String savePlayer(Player player) {
         //Putting default values
         HashMap<String, Object> defaultCfg = new HashMap<>();
-        defaultCfg.put("coordinatesMode", 1); //1 : enabled
-        defaultCfg.put("timeMode", 2); //2 : clock
-        defaultCfg.put("darkMode", 2); //2 : auto
+        defaultCfg.put(CoordMode.cfgName, CoordMode.ENABLED.id); //1 : enabled
+        defaultCfg.put(TimeMode.cfgName, TimeMode.CLOCK24.id); //2 : clock24
+        defaultCfg.put(DarkMode.cfgName, DarkMode.AUTO.id); //2 : auto
         playerHash.put(player.getUniqueId(), defaultCfg);
         //Saves changes
         plugin.getConfig().set(PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), playerHash.get(player.getUniqueId()));
         plugin.saveConfig();
-        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERR + "disabled") + RES + ".";
+        return "InfoHUD is now " + (isEnabled(player) ? GRN + "enabled" : ERR + "disabled") + RES + ".";
     }
 
     /** Removes player UUID from player list. */
@@ -123,7 +126,7 @@ public class Util {
         //Saves changes
         plugin.getConfig().set(PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
         plugin.saveConfig();
-        return "InfoHUD is now " + (isEnabled(player) ? GREN + "enabled" : ERR + "disabled") + RES + ".";
+        return "InfoHUD is now " + (isEnabled(player) ? GRN + "enabled" : ERR + "disabled") + RES + ".";
     }
 
     /* ---------------------------------------------------------------------- COORDINATES ---------------------------------------------------------------------- */
@@ -134,12 +137,12 @@ public class Util {
     }
 
     /** Changes coordinates mode and returns new mode. */
-    static String setCoordinatesMode(Player p, int newMode) {
-        playerHash.get(p.getUniqueId()).put("coordinatesMode", newMode);
+    static String setCoordinatesMode(Player p, CoordMode newMode) {
+        playerHash.get(p.getUniqueId()).put("coordinatesMode", newMode.id);
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Coordinates display set to: " + HLT + COORDS_OPTIONS[newMode] + RES + ".";
+        return "Coordinates display set to: " + HLT + newMode + RES + ".";
     }
 
     /** Returns string of player position. */
@@ -147,7 +150,7 @@ public class Util {
         return p.getLocation().getBlockX() + " " + p.getLocation().getBlockY() + " " + p.getLocation().getBlockZ();
     }
 
-    /* ---------------------------------------------------------------------- COORDINATES ---------------------------------------------------------------------- */
+    /* ---------------------------------------------------------------------- TIME ---------------------------------------------------------------------- */
 
     /** Returns time display settings for player. */
     static int getTimeMode(Player p) {
@@ -155,15 +158,16 @@ public class Util {
     }
 
     /** Changes time mode and returns new mode. */
-    static String setTimeMode(Player p, int newMode) {
-        if (newMode == 3 &&  apiVersion < 14)
+    static String setTimeMode(Player p, TimeMode newMode) {
+        if (newMode == TimeMode.VILLAGER_SCHEDULE &&  apiVersion < 14) {
             return ERR + "Villager schedule display is meaningless for versions before 1.14.";
+        }
 
-        playerHash.get(p.getUniqueId()).put("timeMode", newMode);
+        playerHash.get(p.getUniqueId()).put("timeMode", newMode.id);
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Time display set to: " + HLT + TIME_OPTIONS[newMode] + RES + ".";
+        return "Time display set to: " + HLT + newMode + RES + ".";
     }
 
     /** Converts minecraft internal clock to HH:mm string. */
@@ -174,8 +178,21 @@ public class Util {
         return timeH + ":" + timeM;
     }
 
+    static String getTime12(long time) {
+        //MC day starts at 6:00: https://minecraft.gamepedia.com/Daylight_cycle
+        boolean isPM = false;
+        long currentHour = (time / 1000L + 6L) % 24L;
+        if (currentHour > 12) {
+            currentHour -= 12L;
+            isPM = true;
+        }
+        String timeH = Long.toString(currentHour);
+        String timeM = String.format("%02d", time % 1000L * 60L / 1000L);
+        return timeH + ":" + timeM + (isPM ? "PM" : "AM");
+    }
+
     /** Returns current villager schedule and time before change. */
-    static String getVillagerTimeLeft(long time, String col1, String col2) {
+    static String getVillagerTime(long time, String col1, String col2) {
         //Sleeping 12000 - 0
         if (time > 12000L) {
             long remaining = 12000L - time + 12000L;
@@ -211,12 +228,12 @@ public class Util {
     }
 
     /** Changes dark mode settings and returns new settings. */
-    static String setDarkMode(Player p, int newMode) {
-        playerHash.get(p.getUniqueId()).put("darkMode", newMode);
+    static String setDarkMode(Player p, DarkMode newMode) {
+        playerHash.get(p.getUniqueId()).put("darkMode", newMode.id);
         //Saves changes
         plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + p.getUniqueId().toString(), playerHash.get(p.getUniqueId()));
         plugin.saveConfig();
-        return "Dark mode set to: " + HLT + DARK_OPTIONS[newMode] + RES + ".";
+        return "Dark mode set to: " + HLT + newMode.id + RES + ".";
     }
 
     /** Returns whether the player is in a bright biome for darkmode. */
@@ -252,7 +269,7 @@ public class Util {
                 biomeList.add(b.toString());
                 plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
                 plugin.saveConfig();
-                return GREN + "Added " + HLT + b.toString() + GREN + " to the bright biomes list.";
+                return GRN + "Added " + HLT + b.toString() + GRN + " to the bright biomes list.";
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -274,7 +291,7 @@ public class Util {
                 plugin.saveConfig();
                 //Remove from HashMap
                 brightBiomes.remove(b);
-                return GREN + "Removed " + HLT + b.toString() + GREN + " to the bright biomes list.";
+                return GRN + "Removed " + HLT + b.toString() + GRN + " to the bright biomes list.";
             }
             else {
                 return HLT + b.toString() + RES + " isn't in the bright biomes list.";
@@ -289,7 +306,8 @@ public class Util {
 
     /**
      * Calculates cardinal direction the player is facing.
-     * @return Small message indicating cardinal direction.
+     * @return Small message indicating cardinal direction and coordinate
+     *         towards which the player is facing.
      */
     static String getPlayerDirection(Player player) {
         //-180: Leaning left | +180: Leaning right
@@ -307,15 +325,14 @@ public class Util {
             case 6: return "E [+X]";
             case 7: return "SE";
             case 0:
-            default:
-                //Example: (359 + 22.5)/45
+            default: //Example: (359 + 22.5)/45
                 return "S [+Z]";
         }
     }
 
     /* ---------------------------------------------------------------------- Admin ---------------------------------------------------------------------- */
 
-    /** How many tick between each refresh. */
+    /** @return How many ticks between each refresh. */
     static long getRefreshRate() {
         return refreshRate;
     }
@@ -329,10 +346,12 @@ public class Util {
         try {
             if (newRate <= 0 || newRate > 40) return ERR + "Number must be between 1 and 40 ticks.";
             refreshRate = newRate;
-            //Saves value for next time
+
+            //Save the new value.
             plugin.getConfig().set("refreshRate", refreshRate);
             plugin.saveConfig();
-            //Stop task and restart with new refresh rate
+
+            //Stop plugin and restart with new refresh rate.
             plugin.task.cancel();
             plugin.task = plugin.start(plugin);
             return "Refresh rate set to " + HLT + newRate + RES + ".";

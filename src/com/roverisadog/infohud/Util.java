@@ -15,10 +15,15 @@ import com.roverisadog.infohud.command.TimeMode;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /** Helper class. */
 public class Util {
+
+    private Util() {
+        throw new IllegalArgumentException();
+    }
 
     //Shortcuts
     public static final String PERM_USE = "infohud.use";
@@ -36,30 +41,40 @@ public class Util {
     public static final String GRN = ChatColor.GREEN.toString();
 
     //Colors
-    public static String Bright1 = Util.GLD;
-    public static String Bright2 = Util.WHI;
-    public static String Dark1 = Util.DBLU;
-    public static String Dark2 = Util.DAQA;
+    public static String bright1 = Util.GLD;
+    public static String bright2 = Util.WHI;
+    public static String dark1 = Util.DBLU;
+    public static String dark2 = Util.DAQA;
 
-
-    //Minecraft release 1.XX
+    /** Minecraft release 1.XX. */
     public static int apiVersion;
+    /** CraftBukkit, Spigot, Paper, ... */
     public static String serverVendor;
 
+    /** Currently loaded biomes considered bright. */
     private static EnumSet<Biome> brightBiomes;
 
     //Default values
     static final String CMD_NAME = "infohud";
 
-    static final String BRIGHT_BIOMES_PATH = "brightBiomes";
-    static final String PLAYER_CFG_PATH = "playerConfig";
-    static final String REFRESH_PERIOD_PATH = "refreshPeriod";
-    static final String VERSION_PATH = "infohudVersion";
+    public static final String BRIGHT_BIOMES_PATH = "brightBiomes";
+    public static final String PLAYER_CFG_PATH = "playerConfig";
+    public static final String MESSAGE_UPDATE_DELAY_PATH = "messageUpdateDelay";
+    public static final String BIOME_UPDATE_DELAY_PATH = "biomeUpdateDelay";
+    public static final String VERSION_PATH = "infohudVersion";
 
-    static final String SIGNATURE = Util.SIGN + "[InfoHUD] " + Util.RES;
+    public static final String SIGNATURE = Util.SIGN + "[InfoHUD] " + Util.RES;
+
+    public static final int DEFAULT_MESSAGE_UPDATE_DELAY = 5;
+    public static final int DEFAULT_BIOME_UPDATE_DELAY = 40;
+
 
     //Performance
-    private static long refreshPeriod;
+    /** Delay between each actionbar message update. */
+    private static long messageUpdateDelay;
+    /** Delay between each biome detection update. */
+    private static long biomeUpdateDelay = 40L;
+
     static long benchmark = 0;
 
     /** Running plugin. */
@@ -73,11 +88,17 @@ public class Util {
 
             instance.reloadConfig();
 
-            //Get the refresh period
-            refreshPeriod = instance.getConfig().getLong(REFRESH_PERIOD_PATH);
+            //Get the message update delay.
+            messageUpdateDelay = instance.getConfig().getLong(MESSAGE_UPDATE_DELAY_PATH);
             //Older versions
-            if (refreshPeriod == 0L) {
-                refreshPeriod = instance.getConfig().getLong("refreshRate");
+            if (messageUpdateDelay == 0L) {
+                messageUpdateDelay = instance.getConfig().getLong("refreshRate");
+            }
+
+            //Get the biome update delay.
+            biomeUpdateDelay = instance.getConfig().getLong(BIOME_UPDATE_DELAY_PATH);
+            if (biomeUpdateDelay == 0L) {
+                biomeUpdateDelay = 40L; //Default value.
             }
 
             //Building player settings hash
@@ -114,6 +135,7 @@ public class Util {
 
             if (isFromOlderVersion) {
                 updateConfigFile(instance);
+                isFromOlderVersion = false;
             }
 
             return true;
@@ -152,107 +174,40 @@ public class Util {
     }
 
     /** Updates old config file to new format. */
-    static void updateConfigFile(InfoHUD instance) {
+    static void updateConfigFile(InfoHUD plugin) {
         String msg = GRN + "Old config file detected: updating...";
+
         //Saves old data into code.
-        List<String> oldBiomeList = instance.getConfig().getStringList(BRIGHT_BIOMES_PATH);
-        Long oldRefreshPeriod = instance.getConfig().getLong("refreshRate"); //Old name
+        List<String> oldBiomeList = plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH);
+        messageUpdateDelay = plugin.getConfig().getLong("refreshRate"); //Old name
 
         //Set all config data to null, and save (wipe)
-        for (String key : instance.getConfig().getKeys(false)) {
-            instance.getConfig().set(key, null);
+        for (String key : plugin.getConfig().getKeys(false)) {
+            plugin.getConfig().set(key, null);
         }
-        instance.saveConfig();
+        plugin.saveConfig();
 
         //Rewrite old data and save.
-        instance.getConfig().set(VERSION_PATH, instance.getDescription().getVersion());
-        instance.getConfig().set(REFRESH_PERIOD_PATH, oldRefreshPeriod);
-        instance.getConfig().set(BRIGHT_BIOMES_PATH, oldBiomeList);
+        plugin.getConfig().set(VERSION_PATH, plugin.getDescription().getVersion());
+        plugin.getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
+        plugin.getConfig().set(BIOME_UPDATE_DELAY_PATH, DEFAULT_BIOME_UPDATE_DELAY); //Default value
+        plugin.getConfig().set(BRIGHT_BIOMES_PATH, oldBiomeList);
         for (UUID id : PlayerCfg.playerHash.keySet()) {
-            plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + id.toString(), PlayerCfg.playerHash.get(id).toMap());
+            Util.plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + id.toString(),
+                    PlayerCfg.playerHash.get(id).toMap());
         }
-        instance.saveConfig();
-        isFromOlderVersion = false;
+        plugin.saveConfig();
+
         msg += " Done";
-        print(msg);
-    }
-
-    /** Reloads content of config.yml. */
-    static boolean reload() {
-        boolean b;
-        try {
-            plugin.task.cancel();
-            b = loadConfig(plugin);
-            plugin.task = plugin.start(plugin);
-            return b;
-        }
-        catch (Exception e) {
-            return false;
-        }
-    }
-
-    /* ---------------------------------------------------------------------- TIME ---------------------------------------------------------------------- */
-
-    /** Converts minecraft internal clock to HH:mm string. */
-    public static String getTime24(long time) {
-        //MC day starts at 6:00: https://minecraft.gamepedia.com/Daylight_cycle
-        String timeH = Long.toString((time / 1000L + 6L) % 24L);
-        String timeM = String.format("%02d", time % 1000L * 60L / 1000L);
-        return timeH + ":" + timeM;
-    }
-
-    public static String getTime12(long time) {
-        //MC day starts at 6:00: https://minecraft.gamepedia.com/Daylight_cycle
-        boolean isPM = false;
-        long currentHour = (time / 1000L + 6L) % 24L;
-        if (currentHour > 12) {
-            currentHour -= 12L;
-            isPM = true;
-        }
-        String timeH = Long.toString(currentHour);
-        String timeM = String.format("%02d", time % 1000L * 60L / 1000L);
-        return timeH + ":" + timeM + (isPM ? " PM" : " AM");
-    }
-
-    /**
-     * Returns current villager behavior and the time remaining until the next
-     * scheduled behavior.
-     * @param col1 Main color.
-     * @param col2 Secondary color.
-     */
-    public static String getVillagerTimeLeft(long time, String col1, String col2) {
-        //Sleeping 12000 - 0
-        if (time > 12000L) {
-            long remaining = 12000L - time + 12000L;
-            return col1 + "Sleep: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
-        }
-        //Wandering 11000 - 12000
-        else if (time > 11000L) {
-            long remaining = 1000L - time + 11000L;
-            return col1 + "Wander: " + col2 + 0 + ":" + String.format("%02d", remaining % 1200L / 20L);
-        }
-        //Gathering 9000 - 11000
-        else if (time > 9000L) {
-            long remaining = 2000L - time + 9000L;
-            return col1 + "Gather: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
-        }
-        //Working 2000 - 9000
-        else if (time > 2000L) {
-            long remaining = 7000L - time + 2000L;
-            return col1 + "Work: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
-        }
-        //Wandering 0 - 2000
-        else {
-            long remaining = 2000L - time;
-            return col1 + "Wander: " + col2 + remaining / 1200L + ":" + String.format("%02d", remaining % 1200L / 20L);
-        }
+        printToTerminal(msg);
     }
 
     /* ---------------------------------------------------------------------- Dark Mode ---------------------------------------------------------------------- */
 
     /** Returns whether the player is in a bright biome for darkmode. */
     static void updateIsInBrightBiome(Player p) {
-        PlayerCfg.playerHash.get(p.getUniqueId()).isInBrightBiome = brightBiomes.contains(p.getLocation().getBlock().getBiome());
+        PlayerCfg.playerHash.get(p.getUniqueId()).isInBrightBiome
+                = brightBiomes.contains(p.getLocation().getBlock().getBiome());
     }
 
     /**
@@ -308,7 +263,7 @@ public class Util {
 
                 //Remove from set
                 brightBiomes.remove(b);
-                return GRN + "Removed " + HLT + b.toString() + GRN + " to the bright biomes list.";
+                return GRN + "Removed " + HLT + b.toString() + GRN + " from the bright biomes list.";
             }
             //Wasn't included.
             else {
@@ -316,7 +271,7 @@ public class Util {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return ERR + "Error while removing " + HLT + b.toString() + ERR + " to the bright biomes list.";
+            return ERR + "Error while removing " + HLT + b.toString() + ERR + " from the bright biomes list.";
         }
     }
 
@@ -331,7 +286,9 @@ public class Util {
         //-180: Leaning left | +180: Leaning right
         float yaw = player.getLocation().getYaw();
         //Bring to 360 degrees (Clockwise from -X axis)
-        if (yaw < 0.0F) yaw += 360.0F;
+        if (yaw < 0.0F) {
+            yaw += 360.0F;
+        }
         //Separate into 8 sectors (Arc: 45deg), offset by 1/2 sector (Arc: 22.5deg)
         int sector = (int) ((yaw + 22.5F) / 45F);
         switch (sector) {
@@ -350,40 +307,82 @@ public class Util {
 
     /* ---------------------------------------------------------------------- Admin ---------------------------------------------------------------------- */
 
-    /** @return How many ticks between each refresh. */
-    static long getRefreshPeriod() {
-        return refreshPeriod;
+    /** @return How many ticks between each message update. */
+    static long getMessageUpdateDelay() {
+        return messageUpdateDelay;
+    }
+
+    /** @return How many ticks between each biome change check. */
+    static long getBiomeUpdateDelay() {
+        return biomeUpdateDelay;
     }
 
     /**
-     * Change how many ticks between each refresh. Values higher than 20 may lead to actionbar text fading.
-     * Stops current task and starts a new one with updated value.
+     * Change how many ticks between each action bar message update.
+     * Values higher than 20 may lead to actionbar text fading before it is updated.
+     * Stops current updater task and schedules a new one with updated value.
      * @return Small message indicating updated state.
      */
-    static String setRefreshPeriod(long newPeriod) {
-        try {
-            if (newPeriod <= 0 || newPeriod > 40) {
-                return ERR + "Number must be between 1 and 40 ticks.";
+    static boolean setMessageUpdateDelay(CommandSender sender, String[] args, int argStart) {
+        //No number given
+        if (args.length < argStart + 1) {
+            sendMsg(sender, "Message update delay is currently: "
+                    + Util.HLT + Util.getMessageUpdateDelay() + " ticks.");
+        }
+        //Number was given
+        else {
+            try {
+                long newDelay = Long.parseLong(args[argStart]);
+
+                if (newDelay <= 0 || newDelay > 40) {
+                    sendMsg(sender, ERR + "Number must be between 1 and 40 ticks.");
+                    return true;
+                }
+                messageUpdateDelay = newDelay;
+
+                //Save the new value.
+                plugin.getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
+                plugin.saveConfig();
+
+                //Stop plugin and restart with new refresh period.
+                plugin.msgSenderTask.cancel();
+                plugin.msgSenderTask = plugin.startMessageUpdaterTask(plugin, getMessageUpdateDelay());
+
+                sendMsg(sender, "Message update delay set to " + HLT + newDelay + RES + ".");
+
+                return true;
+            } catch (NumberFormatException e) {
+                sendMsg(sender, Util.ERR + "Must be a positive integer between 1 and 40.");
             }
-            refreshPeriod = newPeriod;
+        }
+        return true;
+    }
 
-            //Save the new value.
-            plugin.getConfig().set(REFRESH_PERIOD_PATH, refreshPeriod);
-            plugin.saveConfig();
+    /** Reloads content of config.yml. */
+    static boolean reload(CommandSender sender) {
+        boolean success;
+        try {
+            //Cancel task, reload config, and restart task.
+            plugin.msgSenderTask.cancel();
+            success = loadConfig(plugin);
+            plugin.msgSenderTask = plugin.startMessageUpdaterTask(plugin, getMessageUpdateDelay());
 
-            //Stop plugin and restart with new refresh period.
-            plugin.task.cancel();
-            plugin.task = plugin.start(plugin);
-            return "Refresh rate set to " + HLT + newPeriod + RES + ".";
+            if (success) {
+                sendMsg(sender, Util.GRN + "Reloaded successfully.");
+            }
+            else {
+                sendMsg(sender, Util.ERR + "Reload failed.");
+            }
+
+            return true;
         }
         catch (Exception e) {
-            e.printStackTrace();
-            return ERR + "Error while changing refresh rate.";
+            return false;
         }
     }
 
     /** Shortcut to print to the console. */
-    static void print(String msg) {
+    static void printToTerminal(String msg) {
         Bukkit.getConsoleSender().sendMessage(SIGNATURE + msg);
     }
 
@@ -391,14 +390,15 @@ public class Util {
      * Gets how much time the last update took.
      * @return Small message indicating status.
      */
-    static String getBenchmark() {
-        return "InfoHUD took " + Util.HLT + String.format("%.3f", Util.benchmark / (1000000D)) + Util.RES
+    static boolean getBenchmark(CommandSender sender) {
+        sendMsg(sender, "InfoHUD took " + Util.HLT + String.format("%.3f", Util.benchmark / (1000000D)) + Util.RES
                 + " ms (" + Util.HLT + String.format("%.2f", (Util.benchmark / (10000D)) / 50D)
-                + Util.RES + " % tick) during the last update.";
+                + Util.RES + " % tick) during the last update.");
+        return true;
     }
 
-    static int getNumber() {
-        return PlayerCfg.playerHash.size();
+    /** Send chat message to command sender. */
+    static void sendMsg(CommandSender sender, String msg) {
+        sender.sendMessage(SIGN + "[InfoHUD] " + RES + msg);
     }
-
 }

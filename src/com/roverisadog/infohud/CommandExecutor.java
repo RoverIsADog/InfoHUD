@@ -22,16 +22,16 @@ import org.bukkit.util.StringUtil;
 /** Handles command completion and execution. */
 public class CommandExecutor implements TabExecutor {
     //Autocomplete choices
-    private static final List<String> CMD_NORMAL =
+    protected static final List<String> CMD_NORMAL =
             Arrays.asList("enable", "disable", CoordMode.cmdName, TimeMode.cmdName, DarkMode.cmdName, "help");
-    private static final List<String> CMD_ADMIN =
-            Arrays.asList("refreshRate", "reload", "benchmark", "brightBiomes");
-    private static final List<String> ALL_CMD = Stream.concat(CMD_NORMAL.stream(), CMD_ADMIN.stream())
+    protected static final List<String> CMD_ADMIN =
+            Arrays.asList("messageUpdateDelay", "reload", "benchmark", "brightBiomes");
+    protected static final List<String> ALL_CMD = Stream.concat(CMD_NORMAL.stream(), CMD_ADMIN.stream())
             .collect(Collectors.toList());
 
-    private static final List<String> CMD_BIOMES =
+    protected static final List<String> CMD_BIOMES =
             Arrays.asList("add", "remove");
-    private static final List<String> BIOME_LIST = new ArrayList<>();
+    protected static final List<String> BIOME_LIST = new ArrayList<>();
 
     /** Instance of the plugin. */
     private final Plugin plugin;
@@ -55,9 +55,9 @@ public class CommandExecutor implements TabExecutor {
         /*
         if args.length == 0:
             if admin:
-                send usage (CMD + CMD_ADMIN)
+                send Usage: concat(CMD + CMD_ADMIN)
             else:
-                send usage CMD
+                send Usage: CMD
         if normalCommand:
             if isPlayer:
                 if hasPerm(use):
@@ -74,140 +74,126 @@ public class CommandExecutor implements TabExecutor {
         else: #Unknown command
             send error unknown command
          */
-        if (!(sender instanceof Player) && !(sender instanceof ConsoleCommandSender)) {
-            sendMsg(sender, "Only players and the console may use commands.");
+
+        boolean canUse = sender.hasPermission(Util.PERM_USE);
+        boolean isAdmin = sender.hasPermission(Util.PERM_ADMIN);
+        boolean isPlayer = (sender instanceof Player);
+        boolean isConsole = (sender instanceof ConsoleCommandSender);
+
+        //Illegal sender.
+        if (!isPlayer && !isConsole) {
+            Util.sendMsg(sender, "Only players and the console may use commands.");
             return true;
         }
 
+
+
         // [/infohud]
-        else if (args.length == 0) {
-            if (sender.hasPermission(Util.PERM_ADMIN)) {
-                sendMsg(sender, "Usage: " + Util.HLT + "/" + Util.CMD_NAME + " " +
+        if (args.length == 0) {
+            if (isAdmin) {
+                Util.sendMsg(sender, "Usage: " + Util.HLT + "/" + Util.CMD_NAME + " " +
                         Stream.concat(CMD_NORMAL.stream(), CMD_ADMIN.stream())
                                 .collect(Collectors.toList())
                                 .toString());
             }
             else {
-                sendMsg(sender, "Usage: " + Util.HLT + "/" + Util.CMD_NAME + " " + CMD_NORMAL.toString());
+                Util.sendMsg(sender, "Usage: " + Util.HLT + "/" + Util.CMD_NAME + " " + CMD_NORMAL.toString());
             }
             return true;
         }
 
-        //Is normal command
+        //Length >= 1, try normal commands
         else if (CMD_NORMAL.contains(args[0])) {
 
+            String argument1 = args[0];
+            int currentLevel = 1;
+
             // [/infohud help]
-            if (args[0].equalsIgnoreCase(CMD_NORMAL.get(5))) {
+            if (argument1.equalsIgnoreCase(CMD_NORMAL.get(5))) {
                 buildHelpMenu(sender);
                 return true;
             }
-
-            //Not player
-            if (!(sender instanceof Player)) {
-                sendMsg(sender, Util.ERR + "Only players may use this command.");
+            //All subsequent normal commands PLAYER ONLY.
+            else if (!(sender instanceof Player)) {
+                Util.sendMsg(sender, Util.ERR + "Only players may use this command.");
                 return true;
             }
+            //Try player only commands
+            else {
+                Player p = (Player) sender;
 
-            Player p = (Player) sender;
-
-            //Doesn't have infohud.use permission.
-            if (!p.hasPermission(Util.PERM_USE)) {
-                sendMsg(p, Util.ERR + "You do not have the " + Util.HLT
-                        + Util.PERM_USE + Util.ERR + " permission to use this commands.");
+                //Doesn't have infohud.use permission.
+                if (!canUse) {
+                    Util.sendMsg(p, Util.ERR + "You do not have the " + Util.HLT
+                            + Util.PERM_USE + Util.ERR + " permission to use this commands.");
+                    return true;
+                }
+                // [/infohud enable]
+                else if (argument1.equalsIgnoreCase(CMD_NORMAL.get(0))) {
+                    return PlayerCfg.savePlayer(p);
+                }
+                // [/infohud disable]
+                else if (argument1.equalsIgnoreCase(CMD_NORMAL.get(1))) {
+                    return PlayerCfg.removePlayer(p);
+                }
+                //Further commands require InfoHUD to be enabled first.
+                else if (!PlayerCfg.isEnabled(p)) {
+                    Util.sendMsg(p, "Enable InfoHUD with "
+                            + Util.HLT + "/" + Util.CMD_NAME + " " + CMD_NORMAL.get(0) + Util.RES + " first.");
+                    return true;
+                }
+                else {
+                    // [/infohud coordinates]
+                    if (argument1.equalsIgnoreCase(CMD_NORMAL.get(2))) {
+                        return CommandHelper.setCoordinates(p, args, currentLevel);
+                    }
+                    // [/infohud time]
+                    else if (argument1.equalsIgnoreCase(CMD_NORMAL.get(3))) {
+                        return CommandHelper.setTime(p, args, currentLevel);
+                    }
+                    // [/infohud darkMode]
+                    else if (argument1.equalsIgnoreCase(CMD_NORMAL.get(4))) {
+                        return CommandHelper.setDarkMode(p, args, currentLevel);
+                    }
+                }
                 return true;
             }
-
-            // [/infohud enable]
-            if (args[0].equalsIgnoreCase(CMD_NORMAL.get(0))) {
-                sendMsg(p, PlayerCfg.savePlayer(p));
-                return true;
-            }
-
-            // [/infohud disable]
-            else if (args[0].equalsIgnoreCase(CMD_NORMAL.get(1))) {
-                sendMsg(p, PlayerCfg.removePlayer(p));
-                return true;
-            }
-
-            else if (!PlayerCfg.isEnabled(p)) {
-                sendMsg(p, "Enable InfoHUD with " + Util.HLT + "/" + Util.CMD_NAME + " " + CMD_NORMAL.get(0) + Util.RES + " first.");
-                return true;
-            }
-
-            // [/infohud coordinates]
-            else if (args[0].equalsIgnoreCase(CMD_NORMAL.get(2))) {
-                return setCoordinates(p, args, 1);
-            }
-
-            // [/infohud time]
-            else if (args[0].equalsIgnoreCase(CMD_NORMAL.get(3))) {
-                return setTime(p, args, 1);
-            }
-
-            // [/infohud darkMode]
-            else if (args[0].equalsIgnoreCase(CMD_NORMAL.get(4))) {
-                return setDarkMode(p, args, 1);
-            }
-            return true;
         }
 
-        else if (args[0].equalsIgnoreCase("number")) {
-            sendMsg(sender, Util.getNumber() + "Players registered");
-        }
-
-        //Admin command
+        //Length >= 1, try normal admin commands
         else if (CMD_ADMIN.contains(args[0])) {
 
-            //Doesn't have the infohud.admin permission and isn't console
-            if (!sender.hasPermission(Util.PERM_ADMIN) && !(sender instanceof ConsoleCommandSender)) {
-                sendMsg(sender, Util.ERR + "You do not have the " + Util.HLT
+            String argument1 = args[0];
+            int currentLevel = 1;
+
+            //Can't use admin commands.
+            if (!isAdmin && !isConsole) {
+                Util.sendMsg(sender, Util.ERR + "You do not have the " + Util.HLT
                         + Util.PERM_ADMIN + Util.ERR + " permission to use this command.");
                 return true;
             }
-
-            // [/infohud refreshRate]
-            if (args[0].equalsIgnoreCase(CMD_ADMIN.get(0))) {
-                //No number
-                if (args.length < 2) {
-                    sendMsg(sender, "Refresh rate is currently: " + Util.HLT + Util.getRefreshPeriod() + " ticks.");
+            //Is admin, try admin commands.
+            else {
+                // [/infohud messageUpdateDelay]
+                if (argument1.equalsIgnoreCase(CMD_ADMIN.get(0))) {
+                    return Util.setMessageUpdateDelay(sender, args, currentLevel);
                 }
-                //Gives number
-                else {
-                    try {
-                        sendMsg(sender, Util.setRefreshPeriod(Long.parseLong(args[1])));
-                    } catch (NumberFormatException e) {
-                        sendMsg(sender, Util.ERR + "Please enter a positive integer between 1 and 40.");
-                    }
+                // [/infohud reload]
+                else if (argument1.equalsIgnoreCase(CMD_ADMIN.get(1))) {
+                    return Util.reload(sender);
                 }
-            }
-
-            // [/infohud reload]
-            else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(1))) {
-                if (args.length > 1) {
-                    sendMsg(sender, Util.ERR + "This command does not take arguments.");
+                // [/infohud benchmark]
+                else if (argument1.equalsIgnoreCase(CMD_ADMIN.get(2))) {
+                    return Util.getBenchmark(sender);
                 }
-                else {
-                    sendMsg(sender, Util.reload() ? Util.GRN + "Reloaded successfully." : Util.ERR + "Reload failed.");
+                // [/infohud brightBiomes]
+                else if (argument1.equalsIgnoreCase(CMD_ADMIN.get(3))) {
+                    return CommandHelper.setBiomes(sender, args, currentLevel);
                 }
-            }
-
-            // [/infohud benchmark]
-            else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(2))) {
-                if (args.length > 1) {
-                    sendMsg(sender, Util.ERR + "This command does not take arguments.");
-                }
-                else {
-                    sendMsg(sender, Util.getBenchmark());
-                }
-            }
-
-            // [/infohud brightBiomes]
-            else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(3))) {
-                return setBiomes(sender, args, 1);
             }
         }
         else {
-            sendMsg(sender, Util.ERR + "Unknown command.");
+            Util.sendMsg(sender, Util.ERR + "Unknown command.");
         }
         return true;
     }
@@ -217,76 +203,82 @@ public class CommandExecutor implements TabExecutor {
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         boolean isPlayer = sender instanceof Player;
         boolean isConsole = sender instanceof ConsoleCommandSender;
+        boolean canUse = sender.hasPermission(Util.PERM_USE);
+        boolean isAdmin = sender.hasPermission(Util.PERM_ADMIN);
 
         //Does not have infohud.use permission
-        if (isPlayer && !sender.hasPermission(Util.PERM_USE)) {
+        if (isPlayer && !canUse) {
             return new ArrayList<>();
         }
 
-        //1st keyword [/infohud X]
+        //1st keyword [/infohud arg1[...]]
         else if (args.length == 1) {
-            if (isConsole || sender.hasPermission(Util.PERM_ADMIN)) {
-                return StringUtil.copyPartialMatches(args[0], ALL_CMD, new ArrayList<>());
+            String argument1 = args[0];
+            if (isConsole || isAdmin) {
+                return StringUtil.copyPartialMatches(argument1, ALL_CMD, new ArrayList<>());
             }
             else {
-                return StringUtil.copyPartialMatches(args[0], CMD_NORMAL, new ArrayList<>());
+                return StringUtil.copyPartialMatches(argument1, CMD_NORMAL, new ArrayList<>());
             }
         }
 
-        //2nd keyword [/infohud CMD ---]
+        //2nd keyword [/infohud arg1 arg2[...]]
         else if (args.length == 2) {
-            //"coordinates"
-            if (CoordMode.cmdName.equalsIgnoreCase(args[0])) {
-                return (isPlayer)
-                        ? StringUtil.copyPartialMatches(args[1], CoordMode.optionsList, new ArrayList<>())
-                        : new ArrayList<>(); //Void if not player.
+
+            String argument1 = args[0];
+            String argument2 = args[1];
+
+            //Try normal commands
+            if (isPlayer) {
+                //"coordinates"
+                if (CoordMode.cmdName.equalsIgnoreCase(argument1)) {
+                    return StringUtil.copyPartialMatches(argument2, CoordMode.OPTIONS_LIST, new ArrayList<>());
+                }
+                //"time"
+                else if (TimeMode.cmdName.equalsIgnoreCase(argument1)) {
+                    return StringUtil.copyPartialMatches(argument2, TimeMode.OPTIONS_LIST, new ArrayList<>());
+                }
+                //"darkMode"
+                else if (DarkMode.cmdName.equalsIgnoreCase(argument1)) {
+                    return StringUtil.copyPartialMatches(argument2, DarkMode.OPTIONS_LIST, new ArrayList<>());
+                }
             }
-            //"time"
-            else if (TimeMode.cmdName.equalsIgnoreCase(args[0])) {
-                return (isPlayer)
-                        ? StringUtil.copyPartialMatches(args[1], TimeMode.stringList, new ArrayList<>())
-                        : new ArrayList<>(); //Void if not player.
-            }
-            //"darkMode"
-            else if (DarkMode.cmdName.equalsIgnoreCase(args[0])) {
-                return (isPlayer)
-                        ? StringUtil.copyPartialMatches(args[1], DarkMode.stringList, new ArrayList<>())
-                        : new ArrayList<>(); //Void if not player.
-            }
-            //"refreshRate"
-            else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(0))) {
-                return (sender.hasPermission(Util.PERM_ADMIN)) ? Collections.singletonList("5") : new ArrayList<>();
-            }
-            //"brightBiomes"
-            else if (args[0].equalsIgnoreCase(CMD_ADMIN.get(3))) {
-                return (sender.hasPermission(Util.PERM_ADMIN))
-                        ? StringUtil.copyPartialMatches(args[1], CMD_BIOMES, new ArrayList<>())
-                        : new ArrayList<>();
+
+            //Try admin commands if is admin
+            if (isAdmin) {
+                //"refreshRate"
+                if (argument1.equalsIgnoreCase(CMD_ADMIN.get(0))) {
+                    return Collections.singletonList(String.valueOf(Util.DEFAULT_MESSAGE_UPDATE_DELAY));
+                }
+                //"brightBiomes"
+                else if (argument1.equalsIgnoreCase(CMD_ADMIN.get(3))) {
+                    return StringUtil.copyPartialMatches(args[1], CMD_BIOMES, new ArrayList<>());
+                }
             }
         }
-        //3rd keyword [/infohud CMD SETTING ---]
+        //3rd keyword [/infohud arg1 arg2 arg3[...]]
         else if (args.length == 3) {
+
+            String argument1 = args[0];
+            String argument2 = args[1];
+            String argument3 = args[2];
+
             //"brightBiomes"
-            if (args[0].equalsIgnoreCase(CMD_ADMIN.get(3))) {
+            if (argument1.equalsIgnoreCase(CMD_ADMIN.get(3))) {
                 //"brightBiomes add"
-                if (args[1].equalsIgnoreCase(CMD_BIOMES.get(0))) {
-                    return StringUtil.copyPartialMatches(args[2], BIOME_LIST, new ArrayList<>());
+                if (argument2.equalsIgnoreCase(CMD_BIOMES.get(0))) {
+                    return StringUtil.copyPartialMatches(argument3, BIOME_LIST, new ArrayList<>());
                 }
                 //"brightBiomes remove"
-                else if (args[1].equalsIgnoreCase(CMD_BIOMES.get(1))) {
+                else if (argument2.equalsIgnoreCase(CMD_BIOMES.get(1))) {
                     List<String> temp = Util.getBrightBiomesList();
                     temp.add("here");
-                    return StringUtil.copyPartialMatches(args[2], temp, new ArrayList<>());
+                    return StringUtil.copyPartialMatches(argument3, temp, new ArrayList<>());
                 }
             }
         }
         //Unrecognized
         return new ArrayList<>();
-    }
-
-    /** Send chat message to command sender. */
-    private void sendMsg(CommandSender sender, String msg) {
-        sender.sendMessage(Util.SIGN + "[InfoHUD] " + Util.RES + msg);
     }
 
     private void buildHelpMenu(CommandSender sender) {
@@ -334,129 +326,6 @@ public class CommandExecutor implements TabExecutor {
 
         String[] msgArr = new String[msg.size()];
         sender.sendMessage(msg.toArray(msgArr));
-    }
-
-    private boolean setCoordinates(Player p, String[] args, int argsStart) {
-        //No argument
-        if (args.length < argsStart + 1) {
-            sendMsg(p, "Coordinates display is currently set to: " + Util.HLT + PlayerCfg.getCoordinatesMode(p));
-            return true;
-        }
-
-        //Cycle through all coordinate modes
-        for (CoordMode cm : CoordMode.values()) {
-            if (cm.name.equalsIgnoreCase(args[argsStart])) {
-                sendMsg(p, PlayerCfg.setCoordinatesMode(p, cm));
-                return true;
-            }
-        }
-
-        //Unrecognized argument
-        sendMsg(p, "Usage: " + Util.HLT + "'/" +
-                Util.CMD_NAME + " " + CMD_NORMAL.get(2) + " " + Arrays.toString(CoordMode.values()));
-        return true;
-    }
-
-    private boolean setTime(Player p, String[] args, int argsStart) {
-        //No argument
-        if (args.length < argsStart + 1) {
-            sendMsg(p, "Time display is currently set to: " + Util.HLT + PlayerCfg.getTimeMode(p));
-            return true;
-        }
-
-        //Cycle through all time modes
-        for (TimeMode tm : TimeMode.values()) {
-            if (tm.name.equalsIgnoreCase(args[argsStart])) {
-                sendMsg(p, PlayerCfg.setTimeMode(p, tm));
-                return true;
-            }
-        }
-
-        //Unrecognized argument
-        sendMsg(p, "Usage: " + Util.HLT + "'/" +
-                Util.CMD_NAME + " " + CMD_NORMAL.get(3) + " " + Arrays.toString(TimeMode.values()));
-        return true;
-    }
-
-    private boolean setDarkMode(Player p, String[] args, int argsStart) {
-        //No argument
-        if (args.length < argsStart + 1) {
-            sendMsg(p, "Dark mode is currently set to: " + Util.HLT + PlayerCfg.getDarkMode(p));
-            return true;
-        }
-
-        //Cycle through all time modes
-        for (DarkMode dm : DarkMode.values()) {
-            if (dm.name.equalsIgnoreCase(args[argsStart])) {
-                sendMsg(p, PlayerCfg.setDarkMode(p, dm));
-                return true;
-            }
-        }
-
-        //Unrecognized argument
-        sendMsg(p, "Usage: " + Util.HLT + "'/" +
-                Util.CMD_NAME + " " + CMD_NORMAL.get(4) + " " + Arrays.toString(DarkMode.values()));
-        return true;
-    }
-
-    private boolean setBiomes(CommandSender sender, String[] args, int argsStart) {
-        //No argument
-        if (args.length < argsStart + 1) {
-            sendMsg(sender, "Usage: " + Util.HLT + "/" + Util.CMD_NAME + " "
-                    + CMD_ADMIN.get(3) + " " + CMD_BIOMES.toString());
-        }
-        // [/infohud biome add]
-        else if (args[argsStart].equalsIgnoreCase(CMD_BIOMES.get(0))) {
-            if (args.length < 3) {
-                sendMsg(sender, "Enter a biome name.");
-            }
-            else {
-                try {
-                    //currentBiome
-                    if ((sender instanceof Player) && args[argsStart + 1].equalsIgnoreCase("here")) {
-                        sendMsg(sender, Util.addBrightBiome(((Player) sender).getLocation().getBlock().getBiome()));
-                    }
-                    //ANY_BIOME
-                    else {
-                        Biome b = Biome.valueOf(args[argsStart + 1].toUpperCase());
-                        sendMsg(sender, Util.addBrightBiome(b));
-                    }
-                } catch (Exception e) {
-                    sendMsg(sender, Util.ERR
-                            + "No biome matching \"" + Util.HLT + args[argsStart + 1].toUpperCase()
-                            + Util.ERR + "\" found in version: 1." + Util.apiVersion + " .");
-                }
-            }
-        }
-        // [/infohud biome remove]
-        else if (args[argsStart].equalsIgnoreCase(CMD_BIOMES.get(1))) {
-            //No argument
-            if (args.length < argsStart + 1) {
-                sendMsg(sender, "Enter a biome name.");
-            }
-            else {
-                try {
-                    //currentBiome
-                    if ((sender instanceof Player) && args[argsStart + 1].equalsIgnoreCase("here")) {
-                        sendMsg(sender, Util.removeBrightBiome(((Player) sender).getLocation().getBlock().getBiome()));
-                    }
-                    //ANY_BIOME
-                    else {
-                        Biome b = Biome.valueOf(args[2].toUpperCase());
-                        sendMsg(sender, Util.removeBrightBiome(b));
-                    }
-                } catch (Exception e) {
-                    sendMsg(sender, Util.ERR
-                            + "No biome matching \"" + Util.HLT + args[argsStart + 1].toUpperCase()
-                            + Util.ERR + "\" found in version: 1." + Util.apiVersion + " .");
-                }
-            }
-        }
-        else {
-            sendMsg(sender, "Usage: " + Util.HLT + "'/" + Util.CMD_NAME + " "
-                    + CMD_ADMIN.get(3) + " " + CMD_BIOMES.toString());
-        }
-        return true;
     }
 
 }

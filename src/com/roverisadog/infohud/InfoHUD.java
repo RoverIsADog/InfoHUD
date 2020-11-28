@@ -13,31 +13,35 @@ import org.bukkit.scheduler.BukkitTask;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Objects;
 import java.util.UUID;
 
 public class InfoHUD extends JavaPlugin {
+
+    protected static InfoHUD instance;
+
+    public InfoHUD() {
+        instance = this;
+    }
 
     //import net.minecraft.server.v1_16_R2.ChatMessageType;
     //import net.minecraft.server.v1_16_R2.IChatBaseComponent;
     //import net.minecraft.server.v1_16_R2.PacketPlayOutChat;
     //import org.bukkit.craftbukkit.v1_16_R2.entity.CraftPlayer;
 
+    //Version for reflection
+    private static String versionStr;
     //Reflected objects for NMS packets.
-    private Class<?> craftPlayerClass;
-    private Field playerConnectionField;
-    private Method getHandleMethod, sendPacketMethod;
-    private Constructor<?> packetPlayOutChatConstructor, chatMessageConstructor;
-    private Object charMessageTypeEnum;
-
-    private String versionStr;
+    private static Class<?> craftPlayerClass;
+    private static Field playerConnectionField;
+    private static Method getHandleMethod, sendPacketMethod;
+    private static Constructor<?> packetPlayOutChatConstructor, chatMessageConstructor;
+    private static Object charMessageTypeEnum;
 
     /** Time elapsed for the last update. */
     private long benchmarkStart;
-    /**  */
-    private int lowFreqTimer;
 
-    protected BukkitTask task;
+    protected BukkitTask msgSenderTask;
+    protected BukkitTask biomeUpdateTask;
 
     /**
      * Initial setup:
@@ -48,7 +52,7 @@ public class InfoHUD extends JavaPlugin {
     public void onEnable() {
         try {
             Util.plugin = this;
-            Util.print(Util.GRN + "InfoHUD Enabling...");
+            Util.printToTerminal(Util.GRN + "InfoHUD Enabling...");
 
             //Save initial cfg or load.
             this.saveDefaultConfig(); //Silent fails if config.yml already exists
@@ -59,33 +63,165 @@ public class InfoHUD extends JavaPlugin {
             //Version check
             //Eg: org.bukkit.craftbukkit.v1_16_R2.blabla
             String ver = Bukkit.getServer().getClass().getPackage().getName();
-            this.versionStr = ver.split("\\.")[3];
+            versionStr = ver.split("\\.")[3];
             Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]);
             Util.serverVendor = ver.split("\\.")[2];
 
             //Attempt to get version-specific NMS packets class.
-            if (!reflectionPackets()) {
+            if (!setupPackets()) {
                 throw new Exception(Util.ERR + "Version error.");
             }
 
-            //Setup command
-            Objects.requireNonNull(this.getCommand(Util.CMD_NAME)).setExecutor(new CommandExecutor(this));
+            //Setup command executor
+            this.getCommand(Util.CMD_NAME).setExecutor(new CommandExecutor(this));
 
-            task = start(this);
-            Util.print(Util.GRN + "InfoHUD Successfully Enabled on " + Util.WHI + "NMS Version 1." + Util.apiVersion);
+            //Start sender and biome updater tasks
+            msgSenderTask = startMessageUpdaterTask(this, Util.getMessageUpdateDelay());
+            biomeUpdateTask = startBiomeUpdaterTask(this, Util.getBiomeUpdateDelay());
+
+
+            Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on " + Util.WHI + "NMS Version 1." + Util.apiVersion);
         }
         catch (Exception e) {
-            Util.print(e.getMessage());
-            Util.print("Shutting down...");
+            Util.printToTerminal(e.getMessage());
+            Util.printToTerminal("Shutting down...");
             Bukkit.getPluginManager().disablePlugin(this);
         }
+    }
+
+    /** Clean up while shutting down (Currently nothing). */
+    @Override
+    public void onDisable() {
+        Util.printToTerminal(Util.GRN + "InfoHUD Disabled");
+    }
+
+    /**
+     * Starts task whose job is to get each player's config and send the right
+     * message accordingly. Does NOT change any value from {@link PlayerCfg}.
+     * @param plugin Plugin instance (this).
+     * @return BukkitTask created.
+     */
+    public BukkitTask startMessageUpdaterTask(Plugin plugin, long refreshPeriod) {
+        return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            benchmarkStart = System.nanoTime();
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+
+                //Skip players that are not on the list
+                if (!PlayerCfg.isEnabled(p)) {
+                    continue;
+                }
+
+                //Assumes that online players << saved players
+
+                PlayerCfg cfg = PlayerCfg.getConfig(p);
+
+                if (cfg.coordMode == CoordMode.DISABLED && cfg.timeMode == TimeMode.DISABLED) {
+                    PlayerCfg.removePlayer(p);
+                    continue;
+                }
+
+                //Setting dark mode colors -> Assume disabled : 0
+                String color1; //Text
+                String color2; //Values
+
+                if (cfg.darkMode == DarkMode.AUTO) {
+                    if (cfg.isInBrightBiome) {
+                        color1 = Util.dark1;
+                        color2 = Util.dark2;
+                    }
+                    else {
+                        color1 = Util.bright1;
+                        color2 = Util.bright2;
+                    }
+                }
+                else if (cfg.darkMode == DarkMode.DISABLED) {
+                    color1 = Util.bright1;
+                    color2 = Util.bright2;
+                }
+                else { //DarkMode.ENABLED
+                    color1 = Util.dark1;
+                    color2 = Util.dark2;
+                }
+
+                //Coordinates enabled
+                if (cfg.coordMode == CoordMode.ENABLED) {
+                    switch (cfg.timeMode) {
+                        case DISABLED:
+                            sendToActionBar(p, color1 + "XYZ: "
+                                    + color2 + CoordMode.getCoordinates(p) + " "
+                                    + color1 + Util.getPlayerDirection(p));
+                            break;
+                        case CURRENT_TICK:
+                            sendToActionBar(p, color1 + "XYZ: "
+                                    + color2 + CoordMode.getCoordinates(p) + " "
+                                    + color1 + String.format("%-10s", Util.getPlayerDirection(p))
+                                    + color2 + TimeMode.getTimeTicks(p));
+                            break;
+                        case CLOCK24:
+                            sendToActionBar(p, color1 + "XYZ: "
+                                    + color2 + CoordMode.getCoordinates(p) + " "
+                                    + color1 + String.format("%-10s", Util.getPlayerDirection(p))
+                                    + color2 + TimeMode.getTime24(p));
+                            break;
+                        case CLOCK12:
+                            sendToActionBar(p, color1 + "XYZ: "
+                                    + color2 + CoordMode.getCoordinates(p) + " "
+                                    + color1 + String.format("%-10s", Util.getPlayerDirection(p))
+                                    + color2 + TimeMode.getTime12(p, color1, color2));
+                            break;
+                        case VILLAGER_SCHEDULE:
+                            sendToActionBar(p, color1 + "XYZ: "
+                                    + color2 + CoordMode.getCoordinates(p) + " "
+                                    + color1 + String.format("%-10s", Util.getPlayerDirection(p))
+                                    + color2 + TimeMode.getVillagerTime(p, color1, color2));
+                            break;
+                        default: //Ignored
+                    }
+                }
+
+                //Coordinates disabled
+                else if (cfg.coordMode == CoordMode.DISABLED) {
+                    switch (cfg.timeMode) {
+                        case CURRENT_TICK:
+                            sendToActionBar(p, color2 + TimeMode.getTimeTicks(p));
+                            break;
+                        case CLOCK12:
+                            sendToActionBar(p, color2 + TimeMode.getTime12(p, color1, color2));
+                            break;
+                        case CLOCK24:
+                            sendToActionBar(p, color2 + TimeMode.getTime24(p));
+                            break;
+                        case VILLAGER_SCHEDULE:
+                            sendToActionBar(p, color2 + TimeMode.getVillagerTime(p, color1, color2));
+                            break;
+                        default: //Ignored
+                    }
+                }
+            }
+            Util.benchmark = System.nanoTime() - benchmarkStart;
+        }, 0L, refreshPeriod);
+    }
+
+    /**
+     * Runs expensive tasks in a new thread (for now, biome fetching).
+     */
+    public BukkitTask startBiomeUpdaterTask(Plugin plugin, long refreshPeriod) {
+        return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+
+            for (Player p : plugin.getServer().getOnlinePlayers()) {
+                if (PlayerCfg.getConfig(p).darkMode == DarkMode.AUTO) {
+                    Util.updateIsInBrightBiome(p);
+                }
+            }
+
+        }, 0L, refreshPeriod);
     }
 
     /**
      *  Uses reflection to get version specific NMS packet-related classes.
      *  Preferred to Spigot built in method for wider compatibility.
      */
-    private boolean reflectionPackets() {
+    private static boolean setupPackets() {
         /* VERSION SPECIFIC PSEUDOCODE
         static void sendToActionBar(Player player, String msg) {
             CraftPlayer p = (CraftPlayer) player;
@@ -153,7 +289,7 @@ public class InfoHUD extends JavaPlugin {
             }
 
         } catch (Exception e) { //ReflectionError
-            Util.print(Util.ERR + "Exception while initializing packets with NMS version 1."
+            Util.printToTerminal(Util.ERR + "Exception while initializing packets with NMS version 1."
                     + versionStr + ". Version may be incompatible.");
             e.printStackTrace();
             return false;
@@ -166,7 +302,7 @@ public class InfoHUD extends JavaPlugin {
      * @param p Recipient player.
      * @param msg Message to send.
      */
-    private void sendToActionBar(Player p, String msg) {
+    private static void sendToActionBar(Player p, String msg) {
         try {
             //IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
             Object icbc = chatMessageConstructor.newInstance(msg, new Object[0]);
@@ -202,112 +338,10 @@ public class InfoHUD extends JavaPlugin {
 
 
         } catch (Exception e) {
-            Util.print("Fatal error while sending packets. Shutting down...");
-            Bukkit.getPluginManager().disablePlugin(this);
+            Util.printToTerminal("Fatal error while sending packets. Shutting down...");
+            Bukkit.getPluginManager().disablePlugin(instance);
             e.printStackTrace();
         }
     }
 
-    /** Clean up while shutting down (Currently nothing). */
-    @Override
-    public void onDisable() {
-        Util.print(Util.GRN + "InfoHUD Disabled");
-    }
-
-    /**
-     * Principal task to be given to the bukkit scheduler.
-     * @param plugin This.
-     * @return Task created.
-     */
-    public BukkitTask start(Plugin plugin) {
-        return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
-            benchmarkStart = System.nanoTime();
-            lowFreqTimer++;
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
-
-                //Skip players that are not on the list
-                if (!PlayerCfg.isEnabled(p)) {
-                    continue;
-                }
-
-                //Assumes that online players << saved players
-
-                PlayerCfg cfg = PlayerCfg.getConfig(p);
-
-                //CoordMode coordMode = Util.getCoordinatesMode(p);
-                //TimeMode timeMode = Util.getTimeMode(p);
-                //DarkMode darkMode = Util.getDarkMode(p);
-
-                if (cfg.coordMode == CoordMode.DISABLED && cfg.timeMode == TimeMode.DISABLED) {
-                    PlayerCfg.removePlayer(p);
-                    continue;
-                }
-
-                //Setting dark mode colors -> Assume disabled : 0
-                String col1; //Text
-                String col2; //Values
-
-                if (cfg.darkMode == DarkMode.AUTO) {
-                    if (cfg.isInBrightBiome) {
-                        col1 = Util.Dark1;
-                        col2 = Util.Dark2;
-                    }
-                    else {
-                        col1 = Util.Bright1;
-                        col2 = Util.Bright2;
-                    }
-                }
-                else if (cfg.darkMode == DarkMode.DISABLED) {
-                    col1 = Util.Bright1;
-                    col2 = Util.Bright2;
-                }
-                else { //Enabled
-                    col1 = Util.Dark1;
-                    col2 = Util.Dark2;
-                }
-
-
-                if (cfg.coordMode == CoordMode.ENABLED) {
-                    switch (cfg.timeMode) {
-                        //Only display coords
-                        case DISABLED:
-                            sendToActionBar(p, col1 + "XYZ: " + col2 + cfg.coordMode.toString(p, col1, col2));
-                            break;
-                        case CURRENT_TICK:
-                        case CLOCK24:
-                        case CLOCK12:
-                            sendToActionBar(p, col1 + "XYZ: "
-                                    + col2 + cfg.coordMode.toString(p, col1, col2) + " "
-                                    + col1 + String.format("%-10s", Util.getPlayerDirection(p))
-                                    + col2 + cfg.timeMode.toString(p, col1, col2));
-                            break;
-                        default:
-                    }
-                }
-
-                //Coordinates disabled
-                else if (cfg.coordMode == CoordMode.DISABLED) {
-                    sendToActionBar(p, col2 + cfg.timeMode.toString(p, col1, col2));
-                }
-            }
-            if (lowFreqTimer > 40) {
-                lowFreqTimer = 0;
-                runLowFreqTasks(plugin);
-            }
-            Util.benchmark = System.nanoTime() - benchmarkStart;
-        }, 0L, Util.getRefreshPeriod());
-    }
-
-    /**
-     * Runs expensive tasks in a new thread (for now, biome fetching).
-     */
-    private void runLowFreqTasks(Plugin plugin) {
-        new Thread(() -> {
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
-                if (PlayerCfg.getConfig(p).darkMode == DarkMode.AUTO) {
-                    Util.updateIsInBrightBiome(p);
-                }
-            }
-        }).start();
-    }
 }

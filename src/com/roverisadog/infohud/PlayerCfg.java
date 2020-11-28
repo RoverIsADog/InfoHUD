@@ -39,9 +39,10 @@ public class PlayerCfg {
      * Saves a player's UUID into player list. Assumes
      * @return Chat message signaling success or failure of operation.
      */
-    static String savePlayer(Player player) {
+    static boolean savePlayer(Player player) {
         if (isEnabled(player)) {
-            return Util.HLT + "InfoHUD was already enabled.";
+            Util.sendMsg(player, Util.HLT + "InfoHUD was already enabled.");
+            return true;
         }
         //Putting default values
         playerHash.put(player.getUniqueId(), new PlayerCfg(player.getUniqueId()));
@@ -50,13 +51,17 @@ public class PlayerCfg {
         Util.plugin.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(),
                 playerHash.get(player.getUniqueId()).toMap());
         Util.plugin.saveConfig();
-        return "InfoHUD is now " + (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".";
+
+        Util.sendMsg(player, "InfoHUD is now "
+                + (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
+        return true;
     }
 
     /** Removes player UUID from player list. */
-    static String removePlayer(Player player) {
+    static boolean removePlayer(Player player) {
         if (!isEnabled(player)) {
-            return Util.HLT + "InfoHUD was already disabled.";
+            Util.sendMsg(player, Util.HLT + "InfoHUD was already disabled.");
+            return true;
         }
 
         playerHash.remove(player.getUniqueId());
@@ -64,7 +69,10 @@ public class PlayerCfg {
         //Saves changes
         Util.plugin.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
         Util.plugin.saveConfig();
-        return "InfoHUD is now " + (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".";
+
+        Util.sendMsg(player, "InfoHUD is now "
+                + (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
+        return true;
     }
 
     /* --------------------------------------------- Coords Mode ---------------------------------------------- */

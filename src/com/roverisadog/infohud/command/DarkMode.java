@@ -10,8 +10,8 @@ public enum DarkMode {
     ENABLED(1, "enabled"),
     AUTO(2, "auto");
 
-    public static List<String> stringList = Arrays.stream(DarkMode.values())
-            .map(DarkMode::name)
+    public static final List<String> OPTIONS_LIST = Arrays.stream(DarkMode.values())
+            .map(DarkMode::toString)
             .collect(Collectors.toList());
     public static String cmdName = "darkMode";
     public static String cfgKey = "darkMode";

@@ -293,13 +293,14 @@ public class CommandExecutor implements TabExecutor {
             msg.add("Currently "
                     + (PlayerCfg.isEnabled(p) ? Util.GRN + "enabled" : Util.ERR + "disabled")
                     + Util.RES + " for "
-                    + (p.hasPermission(Util.PERM_ADMIN) ? p.getDisplayName() + Util.GRN + " (ADMIN)"
+                    + (p.hasPermission(Util.PERM_ADMIN) ? p.getDisplayName() + Util.GRN + " [ADMIN]"
                     : p.getDisplayName()));
 
-            if (PlayerCfg.isEnabled((Player) sender)) {
-                msg.add(Util.HLT + "   coordinates: " + Util.RES + PlayerCfg.getCoordinatesMode(p));
-                msg.add(Util.HLT + "   time: " + Util.RES + PlayerCfg.getTimeMode(p));
-                msg.add(Util.HLT + "   darkMode: " + Util.RES + PlayerCfg.getDarkMode(p));
+            if (PlayerCfg.isEnabled(p)) {
+                PlayerCfg cfg = PlayerCfg.getConfig(p);
+                msg.add(Util.HLT + "   coordinates: " + Util.RES + cfg.coordMode.description);
+                msg.add(Util.HLT + "   time: " + Util.RES + cfg.timeMode.description);
+                msg.add(Util.HLT + "   darkMode: " + Util.RES + cfg.darkMode.description);
             }
         }
 
@@ -308,14 +309,14 @@ public class CommandExecutor implements TabExecutor {
         msg.add(Util.GRN + "Settings");
         if (sender instanceof Player) {
             msg.add(Util.HLT + ">coordinates: " + Util.RES + "Whether or not coordinates are displayed.");
-            msg.add(Util.HLT + ">time: " + Util.RES + "Format the time should be displayed in, or not at all.");
-            msg.add(Util.HLT + ">darkMode: " + Util.RES + "Whether or not to display info with darker colors.");
+            msg.add(Util.HLT + ">time: " + Util.RES + "Format the time should be displayed in, if at all.");
+            msg.add(Util.HLT + ">darkMode: " + Util.RES + "Whether to display info with darker colors.");
         }
 
         //Display admin commands.
         if (sender.hasPermission(Util.PERM_ADMIN) || sender instanceof ConsoleCommandSender) {
-            msg.add(Util.HLT + ">refreshRate: "
-                    + Util.RES + "Interval (in ticks) between each info update. Higher = better performance.");
+            msg.add(Util.HLT + ">messageUpdateDelay: "
+                    + Util.RES + "Ticks between each update. Higher = better performance.");
             msg.add(Util.HLT + ">reload: "
                     + Util.RES + "Reloads config.yml. " + Util.ERR + "YOU COULD LOSE SOME SETTINGS.");
             msg.add(Util.HLT + ">benchmark: "

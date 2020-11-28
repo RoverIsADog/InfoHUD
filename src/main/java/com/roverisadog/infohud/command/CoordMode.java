@@ -8,8 +8,8 @@ import java.util.stream.Collectors;
 
 public enum CoordMode {
 
-    DISABLED(0, "disabled"),
-    ENABLED(1, "enabled");
+    DISABLED(0, "disabled", "disabled"),
+    ENABLED(1, "enabled", "enabled");
 
 
     public static final List<String> OPTIONS_LIST = Arrays.stream(CoordMode.values())
@@ -18,12 +18,14 @@ public enum CoordMode {
     public static String cmdName = "coordinates";
     public static String cfgKey = "coordinatesMode";
 
-    public String name;
     public int id;
+    public String name;
+    public String description;
 
-    CoordMode(int id, String name) {
+    CoordMode(int id, String name, String description) {
         this.id = id;
         this.name = name;
+        this.description = description;
     }
 
     public static CoordMode get(int id) {

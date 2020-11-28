@@ -6,9 +6,9 @@ import java.util.stream.Collectors;
 
 public enum DarkMode {
 
-    DISABLED(0, "disabled"),
-    ENABLED(1, "enabled"),
-    AUTO(2, "auto");
+    DISABLED(0, "disabled", "always disabled"),
+    ENABLED(1, "enabled", "always enabled"),
+    AUTO(2, "auto", "automatic");
 
     public static final List<String> OPTIONS_LIST = Arrays.stream(DarkMode.values())
             .map(DarkMode::toString)
@@ -18,10 +18,12 @@ public enum DarkMode {
 
     public int id;
     public String name;
+    public String description;
 
-    DarkMode(int id, String name) {
+    DarkMode(int id, String name, String description) {
         this.id = id;
         this.name = name;
+        this.description = description;
     }
 
     public static DarkMode get(int id) {

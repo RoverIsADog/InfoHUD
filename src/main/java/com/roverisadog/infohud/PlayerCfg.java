@@ -89,7 +89,7 @@ public class PlayerCfg {
         InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
                 playerHash.get(p.getUniqueId()).toMap());
         InfoHUD.instance.saveConfig();
-        return "Coordinates display set to: " + Util.HLT + newMode.name + Util.RES + ".";
+        return "Coordinates display set to: " + Util.HLT + newMode.description + Util.RES + ".";
     }
 
     /* ---------------------------------------------- Time Mode ----------------------------------------------- */
@@ -128,7 +128,7 @@ public class PlayerCfg {
         InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
                 playerHash.get(p.getUniqueId()).toMap());
         InfoHUD.instance.saveConfig();
-        return "Dark mode set to: " + Util.HLT + newMode.name + Util.RES + ".";
+        return "Dark mode set to: " + Util.HLT + newMode.description + Util.RES + ".";
     }
 
     /**

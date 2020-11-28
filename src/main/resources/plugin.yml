@@ -1,0 +1,29 @@
+name: ${project.artifactId}
+version: ${project.version}
+description: Displays coordinates and time in the actionbar.
+prefix: ${project.artifactId}
+
+author: RoverIsADog
+website: https://github.com/RoverIsADog/InfoHUD
+
+#1.13 to avoid legacy mode.
+api-version: 1.13
+#Otherwise NullPointerException
+load: POSTWORLD
+main: com.roverisadog.infohud.InfoHUD
+
+commands:
+  infohud:
+    description: Displays the list of commands and their functions.
+    usage: /infohud help
+    permission: infohud.use
+    permission-message: You do not have the infohud.toggle permission.
+permissions:
+  infohud.use:
+    description: Allows enabling/disabling/configuring InfoHUD.
+    default: true
+  infohud.admin:
+    description: Allows changing the refresh rate and any other future global settings.
+    default: false
+
+      

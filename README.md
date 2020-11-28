@@ -1,7 +1,7 @@
 <p align="center"><img src="/img/thumbnailRect.png"></p>
 
 ## InfoHUD
-Display coordinates and time to the player action bar. All the functionality of CoordinatesHUD and more!.
+Display coordinates and time to the player's action bar. All the functionality of <a href="https://vanillatweaks.net/picker/datapacks/.">CoordinatesHUD</a> and more!.
 
 Version 1.3.
 
@@ -13,6 +13,7 @@ Display the current time in different formats.
 Automatically switch to dark mode in brighter biomes such as deserts and snow biomes.
 <p align="center"><img src="/img/darkMode.png"></p>
 Nearly every settings can be adjusted (See config.yml).
+
 ## Installation
 Drag `InfoHUD-1.XX.jar` in your plugins folder.
 The plugin should work for all versions 1.8+.

@@ -8,11 +8,11 @@ import java.util.stream.Collectors;
 
 public enum TimeMode {
 
-    DISABLED(0, "disabled"),
-    CURRENT_TICK(1, "currentTick"),
-    CLOCK24(2, "clock24"),
-    VILLAGER_SCHEDULE(3, "clock24"),
-    CLOCK12(4, "clock12");
+    DISABLED(0, "disabled", "disabled"),
+    CURRENT_TICK(1, "currentTick", "current tick"),
+    CLOCK24(2, "clock24", "24 hour clock"),
+    VILLAGER_SCHEDULE(3, "villagerSchedule", "villager schedule"),
+    CLOCK12(4, "clock12", "12 hour clock");
 
     public static final List<String> OPTIONS_LIST = Arrays.stream(TimeMode.values())
             .map(TimeMode::toString)
@@ -20,12 +20,14 @@ public enum TimeMode {
     public static String cmdName = "time";
     public static String cfgKey = "timeMode";
 
-    public final String name;
     public final int id;
+    public final String name;
+    public final String description;
 
-    TimeMode(int id, String name) {
+    TimeMode(int id, String name, String description) {
         this.id = id;
         this.name = name;
+        this.description = description;
     }
 
     public static TimeMode get(int id) {

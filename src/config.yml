@@ -1,6 +1,11 @@
 infohudVersion: '1.3'
 messageUpdateDelay: 5
 biomeUpdateDelay: 40
+colors:
+  bright1: GOLD
+  bright2: WHITE
+  dark1: DARK_BLUE
+  dark2: DARK_AQUA
 brightBiomes:
 - DESERT
 - DESERT_HILLS

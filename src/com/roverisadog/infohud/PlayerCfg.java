@@ -48,9 +48,9 @@ public class PlayerCfg {
         playerHash.put(player.getUniqueId(), new PlayerCfg(player.getUniqueId()));
 
         //Saves changes
-        Util.plugin.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(),
+        InfoHUD.instance.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(),
                 playerHash.get(player.getUniqueId()).toMap());
-        Util.plugin.saveConfig();
+        InfoHUD.instance.saveConfig();
 
         Util.sendMsg(player, "InfoHUD is now "
                 + (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
@@ -67,8 +67,8 @@ public class PlayerCfg {
         playerHash.remove(player.getUniqueId());
 
         //Saves changes
-        Util.plugin.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
-        Util.plugin.saveConfig();
+        InfoHUD.instance.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
+        InfoHUD.instance.saveConfig();
 
         Util.sendMsg(player, "InfoHUD is now "
                 + (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
@@ -86,10 +86,10 @@ public class PlayerCfg {
     static String setCoordinatesMode(Player p, CoordMode newMode) {
         playerHash.get(p.getUniqueId()).coordMode = newMode;
         //Saves changes
-        Util.plugin.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
+        InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
                 playerHash.get(p.getUniqueId()).toMap());
-        Util.plugin.saveConfig();
-        return "Coordinates display set to: " + Util.HLT + newMode + Util.RES + ".";
+        InfoHUD.instance.saveConfig();
+        return "Coordinates display set to: " + Util.HLT + newMode.name + Util.RES + ".";
     }
 
     /* ---------------------------------------------- Time Mode ----------------------------------------------- */
@@ -107,10 +107,10 @@ public class PlayerCfg {
 
         playerHash.get(p.getUniqueId()).timeMode = newMode;
         //Saves changes
-        Util.plugin.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
+        InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
                 playerHash.get(p.getUniqueId()).toMap());
-        Util.plugin.saveConfig();
-        return "Time display set to: " + Util.HLT + newMode + Util.RES + ".";
+        InfoHUD.instance.saveConfig();
+        return "Time display set to: " + Util.HLT + newMode.description + Util.RES + ".";
     }
 
     /* ---------------------------------------------- Dark Mode ----------------------------------------------- */
@@ -125,10 +125,10 @@ public class PlayerCfg {
         playerHash.get(p.getUniqueId()).darkMode = newMode;
 
         //Saves changes
-        Util.plugin.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
+        InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
                 playerHash.get(p.getUniqueId()).toMap());
-        Util.plugin.saveConfig();
-        return "Dark mode set to: " + Util.HLT + newMode.id + Util.RES + ".";
+        InfoHUD.instance.saveConfig();
+        return "Dark mode set to: " + Util.HLT + newMode.name + Util.RES + ".";
     }
 
     /**

@@ -6,7 +6,6 @@ import com.roverisadog.infohud.command.DarkMode;
 import com.roverisadog.infohud.command.TimeMode;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -51,12 +50,11 @@ public class InfoHUD extends JavaPlugin {
     @Override
     public void onEnable() {
         try {
-            Util.plugin = this;
             Util.printToTerminal(Util.GRN + "InfoHUD Enabling...");
 
             //Save initial cfg or load.
             this.saveDefaultConfig(); //Silent fails if config.yml already exists
-            if (!Util.loadConfig(this)) {
+            if (!Util.loadConfig()) {
                 throw new Exception(Util.ERR + "Error while reading config.yml.");
             }
 
@@ -76,8 +74,8 @@ public class InfoHUD extends JavaPlugin {
             this.getCommand(Util.CMD_NAME).setExecutor(new CommandExecutor(this));
 
             //Start sender and biome updater tasks
-            msgSenderTask = startMessageUpdaterTask(this, Util.getMessageUpdateDelay());
-            biomeUpdateTask = startBiomeUpdaterTask(this, Util.getBiomeUpdateDelay());
+            msgSenderTask = startMessageUpdaterTask(Util.getMessageUpdateDelay());
+            biomeUpdateTask = startBiomeUpdaterTask(Util.getBiomeUpdateDelay());
 
 
             Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on " + Util.WHI + "NMS Version 1." + Util.apiVersion);
@@ -98,13 +96,12 @@ public class InfoHUD extends JavaPlugin {
     /**
      * Starts task whose job is to get each player's config and send the right
      * message accordingly. Does NOT change any value from {@link PlayerCfg}.
-     * @param plugin Plugin instance (this).
      * @return BukkitTask created.
      */
-    public BukkitTask startMessageUpdaterTask(Plugin plugin, long refreshPeriod) {
-        return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+    public BukkitTask startMessageUpdaterTask(long refreshPeriod) {
+        return Bukkit.getScheduler().runTaskTimerAsynchronously(instance, () -> {
             benchmarkStart = System.nanoTime();
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
+            for (Player p : instance.getServer().getOnlinePlayers()) {
 
                 //Skip players that are not on the list
                 if (!PlayerCfg.isEnabled(p)) {
@@ -205,12 +202,14 @@ public class InfoHUD extends JavaPlugin {
     /**
      * Runs expensive tasks in a new thread (for now, biome fetching).
      */
-    public BukkitTask startBiomeUpdaterTask(Plugin plugin, long refreshPeriod) {
-        return Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+    public BukkitTask startBiomeUpdaterTask(long refreshPeriod) {
+        return Bukkit.getScheduler().runTaskTimerAsynchronously(instance, () -> {
 
-            for (Player p : plugin.getServer().getOnlinePlayers()) {
-                if (PlayerCfg.getConfig(p).darkMode == DarkMode.AUTO) {
-                    Util.updateIsInBrightBiome(p);
+            for (Player p : instance.getServer().getOnlinePlayers()) {
+                if (PlayerCfg.isEnabled(p)) {
+                    if (PlayerCfg.getConfig(p).darkMode == DarkMode.AUTO) {
+                        Util.updateIsInBrightBiome(p);
+                    }
                 }
             }
 

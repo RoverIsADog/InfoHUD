@@ -16,6 +16,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
 import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 /** Helper class. */
@@ -62,6 +63,7 @@ public class Util {
     public static final String MESSAGE_UPDATE_DELAY_PATH = "messageUpdateDelay";
     public static final String BIOME_UPDATE_DELAY_PATH = "biomeUpdateDelay";
     public static final String VERSION_PATH = "infohudVersion";
+    public static final String COLOR_PATH = "colors";
 
     public static final String SIGNATURE = Util.SIGN + "[InfoHUD] " + Util.RES;
 
@@ -77,42 +79,55 @@ public class Util {
 
     static long benchmark = 0;
 
-    /** Running plugin. */
-    static InfoHUD plugin;
-
     static boolean isFromOlderVersion = false;
 
     /** Loads disk contents of config.yml into memory. Returns false if an unhandled exception is found. */
-    static boolean loadConfig(InfoHUD instance) {
+    static boolean loadConfig() {
         try {
 
-            instance.reloadConfig();
+            InfoHUD.instance.reloadConfig();
+
+            FileConfiguration file = InfoHUD.instance.getConfig();
 
             //Get the message update delay.
-            messageUpdateDelay = instance.getConfig().getLong(MESSAGE_UPDATE_DELAY_PATH);
+            messageUpdateDelay = file.getLong(MESSAGE_UPDATE_DELAY_PATH);
             //Older versions
             if (messageUpdateDelay == 0L) {
-                messageUpdateDelay = instance.getConfig().getLong("refreshRate");
+                messageUpdateDelay = DEFAULT_MESSAGE_UPDATE_DELAY;
             }
 
             //Get the biome update delay.
-            biomeUpdateDelay = instance.getConfig().getLong(BIOME_UPDATE_DELAY_PATH);
+            biomeUpdateDelay = file.getLong(BIOME_UPDATE_DELAY_PATH);
             if (biomeUpdateDelay == 0L) {
-                biomeUpdateDelay = 40L; //Default value.
+                biomeUpdateDelay = DEFAULT_BIOME_UPDATE_DELAY; //Default value.
+            }
+
+            //Get colors
+            try {
+                bright1 = getColor(file.getString(COLOR_PATH + ".bright1")).toString();
+                bright2 = getColor(file.getString(COLOR_PATH + ".bright2")).toString();
+                dark1 = getColor(file.getString(COLOR_PATH + ".dark1")).toString();
+                dark2 = getColor(file.getString(COLOR_PATH + ".dark2")).toString();
+            } catch (Exception e) {
+                printToTerminal(ERR + "Error loading one or more colors, using default values.");
+                bright1 = Util.GLD;
+                bright2 = Util.WHI;
+                dark1 = Util.DBLU;
+                dark2 = Util.DAQA;
             }
 
             //Building player settings hash
             PlayerCfg.playerHash = new HashMap<>(); //Map<UUID , PlayerConfig>
 
             //For every section of "playerCfg" : UUID in string form
-            for (String playerStr : instance.getConfig().getConfigurationSection(PLAYER_CFG_PATH).getKeys(false)) {
+            for (String playerStr : file.getConfigurationSection(PLAYER_CFG_PATH).getKeys(false)) {
 
                 //Get UUID from String
                 UUID playerID = UUID.fromString(playerStr);
 
                 //Get raw mapping of the player's settings
-                Map<String, Object> playerSettings = instance.getConfig()
-                        .getConfigurationSection(PLAYER_CFG_PATH + "." + playerStr).getValues(false);
+                Map<String, Object> playerSettings =
+                        file.getConfigurationSection(PLAYER_CFG_PATH + "." + playerStr).getValues(false);
 
                 //Decode into enumerated types.
                 PlayerCfg playerCfg = loadPlayerSettings(playerID, playerSettings);
@@ -123,7 +138,7 @@ public class Util {
 
             //Loading biomes
             brightBiomes = EnumSet.noneOf(Biome.class);
-            for (String currentBiome : instance.getConfig().getStringList(BRIGHT_BIOMES_PATH)) {
+            for (String currentBiome : file.getStringList(BRIGHT_BIOMES_PATH)) {
                 try {
                     Biome bio = Biome.valueOf(currentBiome);
                     brightBiomes.add(bio);
@@ -134,7 +149,7 @@ public class Util {
             }
 
             if (isFromOlderVersion) {
-                updateConfigFile(instance);
+                updateConfigFile();
                 isFromOlderVersion = false;
             }
 
@@ -174,32 +189,56 @@ public class Util {
     }
 
     /** Updates old config file to new format. */
-    static void updateConfigFile(InfoHUD plugin) {
+    static void updateConfigFile() {
         String msg = GRN + "Old config file detected: updating...";
 
+        FileConfiguration file = InfoHUD.instance.getConfig();
+
         //Saves old data into code.
-        List<String> oldBiomeList = plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH);
-        messageUpdateDelay = plugin.getConfig().getLong("refreshRate"); //Old name
+        List<String> oldBiomeList = file.getStringList(BRIGHT_BIOMES_PATH);
+        messageUpdateDelay = file.getLong("refreshRate"); //Old name
 
         //Set all config data to null, and save (wipe)
-        for (String key : plugin.getConfig().getKeys(false)) {
-            plugin.getConfig().set(key, null);
+        for (String key : file.getKeys(false)) {
+            InfoHUD.instance.getConfig().set(key, null);
         }
-        plugin.saveConfig();
+        InfoHUD.instance.saveConfig();
 
         //Rewrite old data and save.
-        plugin.getConfig().set(VERSION_PATH, plugin.getDescription().getVersion());
-        plugin.getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
-        plugin.getConfig().set(BIOME_UPDATE_DELAY_PATH, DEFAULT_BIOME_UPDATE_DELAY); //Default value
-        plugin.getConfig().set(BRIGHT_BIOMES_PATH, oldBiomeList);
-        for (UUID id : PlayerCfg.playerHash.keySet()) {
-            Util.plugin.getConfig().createSection(PLAYER_CFG_PATH + "." + id.toString(),
+        file.set(VERSION_PATH, InfoHUD.instance.getDescription().getVersion()); //infohudVersion: '1.3'
+        file.set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay); //messageUpdateDelay: 5
+        file.set(BIOME_UPDATE_DELAY_PATH, DEFAULT_BIOME_UPDATE_DELAY); //biomeUpdateDelay: 40
+
+        file.set(COLOR_PATH + ".bright1", ChatColor.GOLD.name());
+        file.set(COLOR_PATH + ".bright2", ChatColor.WHITE.name());
+        file.set(COLOR_PATH + ".dark1", ChatColor.DARK_BLUE.name());
+        file.set(COLOR_PATH + ".dark2", ChatColor.DARK_AQUA.name());
+
+        file.set(BRIGHT_BIOMES_PATH, oldBiomeList); //brightBiomes:
+        for (UUID id : PlayerCfg.playerHash.keySet()) { //playerConfig:
+            file.createSection(PLAYER_CFG_PATH + "." + id.toString(),
                     PlayerCfg.playerHash.get(id).toMap());
         }
-        plugin.saveConfig();
+        InfoHUD.instance.saveConfig();
 
         msg += " Done";
         printToTerminal(msg);
+    }
+
+    /**
+     * Attempts to get a color from a given name.
+     * @param name Name to check.
+     * @return Matching color.
+     * @throws Exception If no matching color is found.
+     * @see <a href="https://minecraft.gamepedia.com/Formatting_codes">Color codes (ALLCAPS)</a>
+     */
+    private static ChatColor getColor(String name) throws Exception {
+        for (ChatColor col : ChatColor.values()) {
+            if (col.name().equalsIgnoreCase(name)) {
+                return col;
+            }
+        }
+        throw new Exception();
     }
 
     /* ---------------------------------------------------------------------- Dark Mode ---------------------------------------------------------------------- */
@@ -235,10 +274,11 @@ public class Util {
                 //Add to set
                 brightBiomes.add(b);
                 //Update config.yml. APPEND MODE to not lose biomes from other versions.
-                List<String> biomeList = new LinkedList<>(plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH));
+                List<String> biomeList =
+                        new LinkedList<>(InfoHUD.instance.getConfig().getStringList(BRIGHT_BIOMES_PATH));
                 biomeList.add(b.toString());
-                plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
-                plugin.saveConfig();
+                InfoHUD.instance.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
+                InfoHUD.instance.saveConfig();
                 return GRN + "Added " + HLT + b.toString() + GRN + " to the bright biomes list.";
             }
         } catch (Exception e) {
@@ -256,10 +296,11 @@ public class Util {
             //Contained
             if (brightBiomes.contains(b)) {
                 //Update config.yml. APPEND MODE to not lose biomes from other versions.
-                List<String> biomeList = new LinkedList<>(plugin.getConfig().getStringList(BRIGHT_BIOMES_PATH));
+                List<String> biomeList =
+                        new LinkedList<>(InfoHUD.instance.getConfig().getStringList(BRIGHT_BIOMES_PATH));
                 biomeList.remove(b.toString());
-                plugin.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
-                plugin.saveConfig();
+                InfoHUD.instance.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
+                InfoHUD.instance.saveConfig();
 
                 //Remove from set
                 brightBiomes.remove(b);
@@ -341,12 +382,12 @@ public class Util {
                 messageUpdateDelay = newDelay;
 
                 //Save the new value.
-                plugin.getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
-                plugin.saveConfig();
+                InfoHUD.instance.getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
+                InfoHUD.instance.saveConfig();
 
                 //Stop plugin and restart with new refresh period.
-                plugin.msgSenderTask.cancel();
-                plugin.msgSenderTask = plugin.startMessageUpdaterTask(plugin, getMessageUpdateDelay());
+                InfoHUD.instance.msgSenderTask.cancel();
+                InfoHUD.instance.msgSenderTask = InfoHUD.instance.startMessageUpdaterTask(getMessageUpdateDelay());
 
                 sendMsg(sender, "Message update delay set to " + HLT + newDelay + RES + ".");
 
@@ -363,9 +404,9 @@ public class Util {
         boolean success;
         try {
             //Cancel task, reload config, and restart task.
-            plugin.msgSenderTask.cancel();
-            success = loadConfig(plugin);
-            plugin.msgSenderTask = plugin.startMessageUpdaterTask(plugin, getMessageUpdateDelay());
+            InfoHUD.instance.msgSenderTask.cancel();
+            success = loadConfig();
+            InfoHUD.instance.msgSenderTask = InfoHUD.instance.startMessageUpdaterTask(getMessageUpdateDelay());
 
             if (success) {
                 sendMsg(sender, Util.GRN + "Reloaded successfully.");

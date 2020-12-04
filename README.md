@@ -1,9 +1,17 @@
 <p align="center"><img src="/img/thumbnailRect.png"></p>
 
 ## InfoHUD
-Display coordinates and time to the player's action bar. All the functionality of <a href="https://vanillatweaks.net/picker/datapacks/.">CoordinatesHUD</a> and more!.
+Display coordinates and time to the player's action bar. All the functionality of <a href="https://vanillatweaks.net/picker/datapacks/.">Coordinates HUD</a> and more! \
+Version 1.3, compatible with MC 1.8+. Compiled using Spigot 1.8.8.
 
-Version 1.3.
+### Download & Installation
+
+<a href="https://dev.bukkit.org/projects/infohud">Download on curseforge (outdated)</a> \
+**The project is not abandoned**, there is an account issue on curseforge preventing me from logging in. In the meantime, download here or on spigotmc. \
+<a href="https://www.spigotmc.org/resources/infohud.83844/">Download on spigotmc</a> \
+<a href="https://github.com/RoverIsADog/InfoHUD/tree/master/past%20releases">Download here</a>
+
+Drag `InfoHUD-1.XX.jar` in the plugins folder. The plugin should work for all versions 1.8+.
 
 ## Features
 Display your current coordinates.
@@ -14,15 +22,11 @@ Automatically switch to dark mode in brighter biomes such as deserts and snow bi
 <p align="center"><img src="/img/darkMode.png"></p>
 Nearly every settings can be adjusted (See config.yml).
 
-## Installation
-Drag `InfoHUD-1.XX.jar` in your plugins folder.
-The plugin should work for all versions 1.8+.
-
 ## Commands
 **Per player (infohud.use):**\
 `/infohud <enable|disable>` : Enable/Disable InfoHUD for yourself.\
 `/infohud coordinates <disabled|enabled>` : Enable/Disable showing your coordinates.\
-`/infohud time <disabled|currentTick|clock12|clock24|villagerSchedule>` : Time display format.
+`/infohud time <disabled|currentTick|clock12|clock24|villagerSchedule>` : Time display format. \
 `/infohud darkMode <disabled|enabled|auto>` : Dark mode settings.
 
 **Global (infohud.admin):**\

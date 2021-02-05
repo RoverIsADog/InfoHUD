@@ -37,6 +37,7 @@ public class CommandExecutor implements TabExecutor {
     private final Plugin plugin;
 
     static {
+        // Load version-specific biomes
         BIOME_LIST.add("here");
         for (Biome b : Biome.values()) {
             BIOME_LIST.add(b.toString());
@@ -85,8 +86,6 @@ public class CommandExecutor implements TabExecutor {
             Util.sendMsg(sender, "Only players and the console may use commands.");
             return true;
         }
-
-
 
         // [/infohud]
         if (args.length == 0) {

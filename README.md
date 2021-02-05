@@ -39,6 +39,7 @@ Nearly every settings can be adjusted (See config.yml).
 `infohud.admin` Allows player to change global settings.
 
 ## config.yml
+For versions 1.2 or lower, see [here](./README_OLD.md).
 ```yaml
 infohudVersion: '1.X'
 # Ticks between each update. Performance cost is extremely small so you are unlikely to run into any
@@ -53,21 +54,22 @@ colors:
   bright2: WHITE
   dark1: DARK_BLUE
   dark2: DARK_AQUA
-# Biomes where dark mode will turn on turns on automatically.
+# Biomes where dark mode will turn on automatically.
 # Find at https://minecraft.gamepedia.com/Biome#Biome_IDs, the F3 menu or use /infohud biome add
 # Must be in UPPERCASE. Eg. DEEP_FROZEN_OCEAN
-# Only biomes in the list recognized by your MC version will be loaded.
+# Only biomes in the list recognized by your current MC version will be loaded. Biomes from older/newer versions
+# will not be loaded, but remain in the file.
 brightBiomes:
 - DESERT
 - BIOME_NAME
 - ...
-# Settings on a per-player basis
+# Settings on a per-player basis. https://namemc.com/ to get your UUID.
 playerConfig:
-  {UUID}:
-    coordinatesMode: {enabled | disabled}
-    timeMode: {disabled | currentTick | clock12 | clock24 | villagerSchedule}
-    darkMode: {disabled | enabled | auto}
-  {AnotherUUID}:
+  7445052d-632b-4aa1-8da8-44be2053bd5b:
+    coordinatesMode: <enabled | disabled>
+    timeMode: <disabled | currentTick | clock12 | clock24 | villagerSchedule>
+    darkMode: <disabled | enabled | auto>
+  AnotherUUID:
     coordinatesMode: enabled
     timeMode: clock12
     darkMode: auto

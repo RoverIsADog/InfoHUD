@@ -7,8 +7,7 @@ Version 1.3, compatible with MC 1.8+. Compiled using Spigot 1.8.8.
 ### Download & Installation
 
 <a href="https://dev.bukkit.org/projects/infohud">Download on curseforge</a> \
-<a href="https://www.spigotmc.org/resources/infohud.83844/">Download on spigotmc</a> \
-<a href="https://github.com/RoverIsADog/InfoHUD/tree/master/releases">Download here</a>
+<a href="https://www.spigotmc.org/resources/infohud.83844/">Download on spigotmc</a>
 
 Drag `InfoHUD-1.XX.jar` in the plugins folder. The plugin should work for all versions 1.8+.
 
@@ -39,7 +38,7 @@ Nearly every settings can be adjusted (See config.yml).
 `infohud.admin` Allows player to change global settings.
 
 ## config.yml
-For versions 1.2 or lower, see [here](./README_OLD.md).
+For versions 1.2 and lower, see [here](./README_OLD.md).
 ```yaml
 infohudVersion: '1.X'
 # Ticks between each update. Performance cost is extremely small so you are unlikely to run into any

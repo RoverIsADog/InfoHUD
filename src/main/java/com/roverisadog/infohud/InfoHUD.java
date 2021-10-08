@@ -237,7 +237,7 @@ public class InfoHUD extends JavaPlugin {
         } catch (NoClassDefFoundError | Exception e) {
             // Is using bukkit: Use NMS
             isSpigot = false;
-            Util.printToTerminal(Util.GRN + "Spigot API incompatible fallback to NMS");
+            Util.printToTerminal(Util.GRN + "Spigot API unavailable or incompatible: falling back to NMS");
         }
 
         // Use NMS Otherwise

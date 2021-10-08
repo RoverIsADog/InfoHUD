@@ -1,4 +1,4 @@
-infohudVersion: '1.4-SNAPSHOT'
+infohudVersion: '1.4'
 messageUpdateDelay: 5
 biomeUpdateDelay: 40
 colors:

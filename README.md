@@ -2,7 +2,7 @@
 
 ## InfoHUD
 Display coordinates and time to the player's action bar. All the functionality of <a href="https://vanillatweaks.net/picker/datapacks/.">Coordinates HUD</a> and more! \
-Version 1.3, compatible with MC 1.8+. Compiled using Spigot 1.8.8.
+Version 1.4-SNAPSHOT, compatible with MC 1.8+. Compiled using Spigot 1.8.8.
 
 ### Download & Installation
 

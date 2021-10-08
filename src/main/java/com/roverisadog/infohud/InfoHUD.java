@@ -4,6 +4,9 @@ package com.roverisadog.infohud;
 import com.roverisadog.infohud.command.CoordMode;
 import com.roverisadog.infohud.command.DarkMode;
 import com.roverisadog.infohud.command.TimeMode;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -21,6 +24,8 @@ public class InfoHUD extends JavaPlugin {
     public InfoHUD() {
         instance = this;
     }
+
+    private static boolean isSpigot;
 
     //import net.minecraft.server.v1_16_R2.ChatMessageType;
     //import net.minecraft.server.v1_16_R2.IChatBaseComponent;
@@ -78,7 +83,7 @@ public class InfoHUD extends JavaPlugin {
             biomeUpdateTask = startBiomeUpdaterTask(Util.getBiomeUpdateDelay());
 
 
-            Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on " + Util.WHI + "NMS Version 1." + Util.apiVersion);
+            Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on " + Util.WHI + (isSpigot ? "Spigot API" : "NMS") + " Version 1." + Util.apiVersion);
         }
         catch (Exception e) {
             Util.printToTerminal(e.getMessage());
@@ -221,6 +226,22 @@ public class InfoHUD extends JavaPlugin {
      *  Preferred to Spigot built in method for wider compatibility.
      */
     private static boolean setupPackets() {
+
+        // Use spigot API when possible
+        try {
+            Player.Spigot.class.getDeclaredMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
+            // Is using spigot / paper: No need to use reflection.
+            isSpigot = true;
+            Util.printToTerminal(Util.GRN + "Using Spigot API");
+            return true;
+        } catch (NoClassDefFoundError | Exception e) {
+            // Is using bukkit: Use NMS
+            isSpigot = false;
+            Util.printToTerminal(Util.GRN + "Spigot API incompatible fallback to NMS");
+        }
+
+        // Use NMS Otherwise
+
         /* VERSION SPECIFIC PSEUDOCODE
         static void sendToActionBar(Player player, String msg) {
             CraftPlayer p = (CraftPlayer) player;
@@ -230,29 +251,71 @@ public class InfoHUD extends JavaPlugin {
         }
          */
         try {
+            // 1.8 - 1.16: net.minecraft.server.v1_16_R2.X
+            // 1.17 - ?.??: net.minecraft.X TODO Check if changed again in future
+            String nmsPath = Util.apiVersion < 17 ? "net.minecraft.server." + versionStr + "."
+                    : "net.minecraft.";
+
             //org.bukkit.craftbukkit.VERSION.entity.CraftPlayer; | CraftPlayer p = (CraftPlayer) player;
             craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + versionStr + ".entity.CraftPlayer");
-            //import net.minecraft.server.v1_16_R2.IChatBaseComponent;
-            Class<?> iChatBaseComponentClass = Class
-                    .forName("net.minecraft.server." + versionStr + ".IChatBaseComponent");
 
-            //Used to get Player.sendPackets -> p.getHandle().playerConnection.sendPacket(ppoc);
-            //PPOC is instance of packet.
-            Class<?> packetClass = Class.forName("net.minecraft.server." + versionStr + ".Packet");
+            /* import net.minecraft.server.v1_16_R2.IChatBaseComponent;
+            1.8 - 1.16: net.minecraft.v1_16_R2.IChatBaseComponent
+            1.17 - ?.??: net.minecraft.network.chat.IChatBaseComponent; //TODO CHECK IF CHANGED
+             */
+            Class<?> iChatBaseComponentClass;
+            if (Util.apiVersion < 17)
+                iChatBaseComponentClass = Class.forName(nmsPath + "IChatBaseComponent");
+            else
+                iChatBaseComponentClass = Class.forName(nmsPath + "network.chat.IChatBaseComponent");
 
-            //Get methods and fields from sending packet line -> //p.getHandle().playerConnection.sendPacket(ppoc);
-            getHandleMethod = craftPlayerClass.getMethod("getHandle");
-            playerConnectionField = getHandleMethod.getReturnType().getField("playerConnection");
-            sendPacketMethod = playerConnectionField.getType().getMethod("sendPacket", packetClass);
+            /* Used to get Player.sendPackets -> p.getHandle().playerConnection.sendPacket(ppoc);
+               PPOC is instance of packet.
+               1.8 - 1.16: net.minecraft.v1_16_R2.Packet
+               1.17 - ?.??: net.minecraft.network.protocol.Packet //TODO CHECK IF CHANGED
+             */
+            Class<?> packetClass;
+            if (Util.apiVersion < 17)
+                packetClass = Class.forName(nmsPath + "Packet");
+            else
+                packetClass = Class.forName(nmsPath + "network.protocol.Packet");
 
-            //IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
-            Class<?> chatMessageClass = Class.forName("net.minecraft.server." + versionStr + ".ChatMessage");
+            /* Get methods and fields from sending packet line:
+                1.8 - 1.16: p.getHandle().playerConnection.sendPacket(ppoc);
+                1.17 - ?.??: p.getHandle().b.sendPacket(ppoc); //TODO CHECK IF CHANGED
+             */
+            if (Util.apiVersion < 17) {
+                getHandleMethod = craftPlayerClass.getMethod("getHandle");
+                playerConnectionField = getHandleMethod.getReturnType().getField("playerConnection");
+                sendPacketMethod = playerConnectionField.getType().getMethod("sendPacket", packetClass);
+            }
+            else {
+                getHandleMethod = craftPlayerClass.getMethod("getHandle");
+                playerConnectionField = getHandleMethod.getReturnType().getField("b");
+                sendPacketMethod = playerConnectionField.getType().getMethod("sendPacket", packetClass);
+            }
+
+            /* IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
+               1.8 - 1.16: net.minecraft.v1_16_R2.ChatMessage
+               1.17 - ?.??: net.minecraft.network.chat.ChatMessage //TODO CHECK IF CHANGED
+             */
+            Class<?> chatMessageClass;
+            if (Util.apiVersion < 17)
+                chatMessageClass = Class.forName(nmsPath + "ChatMessage");
+            else
+                chatMessageClass = Class.forName(nmsPath + "network.chat.ChatMessage");
             chatMessageConstructor = chatMessageClass.getConstructor(String.class, Object[].class);
 
-            //import net.minecraft.server.VERSION.IChatBaseComponent;
-            //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
-            Class<?> packetPlayOutChatClass = Class
-                    .forName("net.minecraft.server." + versionStr + ".PacketPlayOutChat");
+            /*import net.minecraft.server.VERSION.IChatBaseComponent;
+              PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
+               1.8 - 1.16: net.minecraft.v1_16_R2.PacketPlayOutChat
+               1.17 - ?.??: net.minecraft.network.protocol.game.PacketPlayOutChat //TODO CHECK IF CHANGED
+            */
+            Class<?> packetPlayOutChatClass;
+            if (Util.apiVersion < 17)
+                packetPlayOutChatClass = Class.forName(nmsPath+ "PacketPlayOutChat");
+            else
+                packetPlayOutChatClass = Class.forName(nmsPath+ "network.protocol.game.PacketPlayOutChat");
 
             Class<?> chatMessageTypeClass;
 
@@ -266,19 +329,31 @@ public class InfoHUD extends JavaPlugin {
             else if (Util.apiVersion < 16) {
                 // import net.minecraft.server.v1_16_R2.ChatMessageType;
                 chatMessageTypeClass = Class
-                        .forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
+                        .forName(nmsPath + "ChatMessageType"); //Nonexistent on 1.8
                 // ChatMessageType.GAME_INFO -> 2
                 // PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                 charMessageTypeEnum = chatMessageTypeClass.getEnumConstants()[2];
-                //1.12 - 1.16 : PacketPlayOutChat(IChatBaseComponent, ChatMessageType)
+                //1.12 - 1.15 : PacketPlayOutChat(IChatBaseComponent, ChatMessageType)
                 packetPlayOutChatConstructor = packetPlayOutChatClass
                         .getConstructor(iChatBaseComponentClass, chatMessageTypeClass);
             }
-            //1.16 - ?.?? TODO check if changed each update
-            else {
+            //1.16
+            else if (Util.apiVersion < 17) {
                 //import net.minecraft.server.v1_16_R2.ChatMessageType;
                 chatMessageTypeClass = Class
-                        .forName("net.minecraft.server." + versionStr + ".ChatMessageType"); //Nonexistent on 1.8
+                        .forName(nmsPath + "ChatMessageType"); //Nonexistent on 1.8
+                //ChatMessageType.GAME_INFO -> 2nd index
+                //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
+                charMessageTypeEnum = chatMessageTypeClass.getEnumConstants()[2];
+                //1.16 - ?.?? : PacketPlayOutChat(IChatBaseComponent, ChatMessageType, UUID)
+                packetPlayOutChatConstructor = packetPlayOutChatClass
+                        .getConstructor(iChatBaseComponentClass, chatMessageTypeClass, UUID.class);
+            }
+            //1.16
+            else {
+                //import net.minecraft.network.chat.ChatMessageType;
+                chatMessageTypeClass = Class
+                        .forName(nmsPath + "network.chat.ChatMessageType"); //Nonexistent on 1.8
                 //ChatMessageType.GAME_INFO -> 2nd index
                 //PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                 charMessageTypeEnum = chatMessageTypeClass.getEnumConstants()[2];
@@ -302,6 +377,14 @@ public class InfoHUD extends JavaPlugin {
      * @param msg Message to send.
      */
     private static void sendToActionBar(Player p, String msg) {
+
+        // Use spigot API if possible
+        if (isSpigot) {
+            p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
+            return;
+        }
+
+        // Use NMS otherwise
         try {
             //IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
             Object icbc = chatMessageConstructor.newInstance(msg, new Object[0]);

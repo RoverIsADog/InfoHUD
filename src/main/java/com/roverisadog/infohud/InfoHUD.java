@@ -253,8 +253,9 @@ public class InfoHUD extends JavaPlugin {
         try {
             // 1.8 - 1.16: net.minecraft.server.v1_16_R2.X
             // 1.17 - ?.??: net.minecraft.X TODO Check if changed again in future
-            String nmsPath = Util.apiVersion < 17 ? "net.minecraft.server." + versionStr + "."
-                    : "net.minecraft.";
+            String nmsPath = Util.apiVersion < 17
+                    ? "net.minecraft.server." + versionStr + "." // 1.8 - 1.16
+                    : "net.minecraft."; // 1.17
 
             //org.bukkit.craftbukkit.VERSION.entity.CraftPlayer; | CraftPlayer p = (CraftPlayer) player;
             craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + versionStr + ".entity.CraftPlayer");
@@ -269,6 +270,8 @@ public class InfoHUD extends JavaPlugin {
             else
                 iChatBaseComponentClass = Class.forName(nmsPath + "network.chat.IChatBaseComponent");
 
+            Util.printToTerminal("Checkpoint 1");
+
             /* Used to get Player.sendPackets -> p.getHandle().playerConnection.sendPacket(ppoc);
                PPOC is instance of packet.
                1.8 - 1.16: net.minecraft.v1_16_R2.Packet
@@ -280,20 +283,30 @@ public class InfoHUD extends JavaPlugin {
             else
                 packetClass = Class.forName(nmsPath + "network.protocol.Packet");
 
+            Util.printToTerminal("Checkpoint 2");
+
             /* Get methods and fields from sending packet line:
                 1.8 - 1.16: p.getHandle().playerConnection.sendPacket(ppoc);
                 1.17 - ?.??: p.getHandle().b.sendPacket(ppoc); //TODO CHECK IF CHANGED
              */
             if (Util.apiVersion < 17) {
                 getHandleMethod = craftPlayerClass.getMethod("getHandle");
+                Util.printToTerminal("Checkpoint 2.11");
                 playerConnectionField = getHandleMethod.getReturnType().getField("playerConnection");
+                Util.printToTerminal("Checkpoint 2.12");
                 sendPacketMethod = playerConnectionField.getType().getMethod("sendPacket", packetClass);
+                Util.printToTerminal("Checkpoint 2.13");
             }
             else {
                 getHandleMethod = craftPlayerClass.getMethod("getHandle");
+                Util.printToTerminal("Checkpoint 2.21");
                 playerConnectionField = getHandleMethod.getReturnType().getField("b");
+                Util.printToTerminal("Checkpoint 2.22");
                 sendPacketMethod = playerConnectionField.getType().getMethod("sendPacket", packetClass);
+                Util.printToTerminal("Checkpoint 2.23");
             }
+
+            Util.printToTerminal("Checkpoint 3");
 
             /* IChatBaseComponent icbc = IChatBaseComponent.ChatSerializer.a("{\"text\": \"" + msg + "\"}");
                1.8 - 1.16: net.minecraft.v1_16_R2.ChatMessage
@@ -306,6 +319,8 @@ public class InfoHUD extends JavaPlugin {
                 chatMessageClass = Class.forName(nmsPath + "network.chat.ChatMessage");
             chatMessageConstructor = chatMessageClass.getConstructor(String.class, Object[].class);
 
+            Util.printToTerminal("Checkpoint 4");
+
             /*import net.minecraft.server.VERSION.IChatBaseComponent;
               PacketPlayOutChat ppoc = new PacketPlayOutChat(icbc, ChatMessageType.GAME_INFO, p.getUniqueId());
                1.8 - 1.16: net.minecraft.v1_16_R2.PacketPlayOutChat
@@ -316,6 +331,8 @@ public class InfoHUD extends JavaPlugin {
                 packetPlayOutChatClass = Class.forName(nmsPath+ "PacketPlayOutChat");
             else
                 packetPlayOutChatClass = Class.forName(nmsPath+ "network.protocol.game.PacketPlayOutChat");
+
+            Util.printToTerminal("Checkpoint 5");
 
             Class<?> chatMessageTypeClass;
 
@@ -349,7 +366,7 @@ public class InfoHUD extends JavaPlugin {
                 packetPlayOutChatConstructor = packetPlayOutChatClass
                         .getConstructor(iChatBaseComponentClass, chatMessageTypeClass, UUID.class);
             }
-            //1.16
+            //1.17
             else {
                 //import net.minecraft.network.chat.ChatMessageType;
                 chatMessageTypeClass = Class
@@ -361,6 +378,8 @@ public class InfoHUD extends JavaPlugin {
                 packetPlayOutChatConstructor = packetPlayOutChatClass
                         .getConstructor(iChatBaseComponentClass, chatMessageTypeClass, UUID.class);
             }
+
+            Util.printToTerminal("Checkpoint 6");
 
         } catch (Exception e) { //ReflectionError
             Util.printToTerminal(Util.ERR + "Exception while initializing packets with NMS version 1."
@@ -382,6 +401,12 @@ public class InfoHUD extends JavaPlugin {
         if (isSpigot) {
             p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
             return;
+        }
+
+        try {
+            p.getClass().getMethod("getHandle").invoke(p);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         // Use NMS otherwise

@@ -7,10 +7,10 @@ import org.bukkit.entity.Player;
 /**
  * Sends a message using spigot api (preferred)
  */
-public class SpigotActionBarSender implements ActionBarSender {
+public class ActionBarSenderSpigot implements ActionBarSender {
 
 	@Override
-	public void sendToActionBar(Player p, String msg) throws Exception {
+	public void sendToActionBar(Player p, String msg) {
 		p.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(msg));
 	}
 }

@@ -10,7 +10,7 @@ import java.util.UUID;
 /**
  * NMS for sending messages to the actionbar, for 1.16
  */
-public class ActionBarSender116 implements ActionBarSender {
+public class ActionBarSenderNMS1_16 implements ActionBarSender {
 
 	private static Class<?> craftPlayerClass;
 	private static Method getHandleMethod;
@@ -25,7 +25,7 @@ public class ActionBarSender116 implements ActionBarSender {
 	 * @param versionStr Internal string for the server version.
 	 * @throws Exception Reflection errors or otherwise.
 	 */
-	public ActionBarSender116(String versionStr) throws Exception {
+	public ActionBarSenderNMS1_16(String versionStr) throws Exception {
 		String nmsPath = "net.minecraft.server.";
 
 		//org.bukkit.craftbukkit.VERSION.entity.CraftPlayer; | CraftPlayer p = (CraftPlayer) player;

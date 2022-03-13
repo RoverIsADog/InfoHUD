@@ -9,7 +9,7 @@ import java.lang.reflect.Method;
 /**
  * NMS for sending messages to the actionbar, from 1.8 to 1.11
  */
-public class ActionBarSender18 implements ActionBarSender {
+public class ActionBarSenderNMS1_8 implements ActionBarSender {
 
 	private static Class<?> craftPlayerClass;
 	private static Method getHandleMethod;
@@ -23,7 +23,7 @@ public class ActionBarSender18 implements ActionBarSender {
 	 * @param versionStr Internal string for the server version.
 	 * @throws Exception Reflection errors or otherwise.
 	 */
-	public ActionBarSender18(String versionStr) throws Exception {
+	public ActionBarSenderNMS1_8(String versionStr) throws Exception {
 		String nmsPath = "net.minecraft.server.";
 
 		//org.bukkit.craftbukkit.VERSION.entity.CraftPlayer; | CraftPlayer p = (CraftPlayer) player;

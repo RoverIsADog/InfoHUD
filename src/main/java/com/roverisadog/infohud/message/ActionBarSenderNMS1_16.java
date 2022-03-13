@@ -26,7 +26,7 @@ public class ActionBarSenderNMS1_16 implements ActionBarSender {
 	 * @throws Exception Reflection errors or otherwise.
 	 */
 	public ActionBarSenderNMS1_16(String versionStr) throws Exception {
-		String nmsPath = "net.minecraft.server.";
+		String nmsPath = "net.minecraft.server." + versionStr + ".";
 
 		//org.bukkit.craftbukkit.VERSION.entity.CraftPlayer; | CraftPlayer p = (CraftPlayer) player;
 		craftPlayerClass = Class.forName("org.bukkit.craftbukkit." + versionStr + ".entity.CraftPlayer");

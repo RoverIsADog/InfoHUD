@@ -1,6 +1,7 @@
 
 package com.roverisadog.infohud;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -54,6 +55,17 @@ public class Util {
 
 	/** Currently loaded biomes considered bright. */
 	private static EnumSet<Biome> brightBiomes;
+	private static final String[] defaultBrightBiomes = {
+			"DESERT", "- DESERT_HILLS", "ICE_DESERT", "BEACH", "SNOWY_BEACH", 
+			"COLD_BEACH", "SNOWY_TUNDRA", "COLD_TUNDRA", "ICE_FLATS", "MUTATED_ICE_FLATS",
+			"SNOWY_TAIGA", "SNOWY_TAIGA_HILLS", "SNOWY_TAIGA_MOUNTAINS", "COLD_TAIGA",
+			"COLD_TAIGA_HILLS", "COLD_TAIGA_MOUNTAINS", "ICE_MOUNTAINS", "SNOWY_MOUNTAINS",
+			"COLD_MOUNTAINS", "EXTREME_HILLS", "EXTREME_HILLS_PLUS_MOUNTAINS", "GRAVELLY_MOUNTAINS",
+			"MODIFIED_GRAVELLY_MOUNTAINS", "ICE_PLAINS", "ICE_PLAINS_SPIKE", "ICE_SPIKES", "FROZEN_RIVER",
+			/* Caves and cliffs */
+			"GROVE", "SNOWY_SLOPES", "JAGGED_PEAKS", "FROZEN_PEAKS", "STONY_PEAKS", "WINDSWEPT_HILLS",
+			"WINDSWEPT_GRAVELLY_HILLS", "SNOWY_PLAINS"
+	};
 
 	//Default values
 	static final String CMD_NAME = "infohud";
@@ -313,6 +325,25 @@ public class Util {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ERR + "Error while removing " + HLT + b.toString() + ERR + " from the bright biomes list.";
+		}
+	}
+
+	static String resetBrightBiomes() {
+		try {
+			InfoHUD.instance.getConfig().set(BRIGHT_BIOMES_PATH, defaultBrightBiomes);
+			InfoHUD.instance.saveConfig();
+			brightBiomes.clear();
+			for (String b : defaultBrightBiomes) {
+				try {
+					Biome bio = Biome.valueOf(b);
+					brightBiomes.add(bio);
+				} catch (Exception ignored) {} // DNE in current version
+			}
+			return GRN + "Reset the bright biomes list.";
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ERR + "Error while resetting the bright biomes list.";
 		}
 	}
 

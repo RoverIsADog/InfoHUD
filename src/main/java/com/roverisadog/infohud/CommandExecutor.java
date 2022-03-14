@@ -29,8 +29,7 @@ public class CommandExecutor implements TabExecutor {
 	protected static final List<String> ALL_CMD = Stream.concat(CMD_NORMAL.stream(), CMD_ADMIN.stream())
 			.collect(Collectors.toList());
 
-	protected static final List<String> CMD_BIOMES =
-			Arrays.asList("add", "remove");
+	protected static final List<String> CMD_BIOMES = Arrays.asList("add", "remove", "reset");
 	protected static final List<String> BIOME_LIST = new ArrayList<>();
 
 	/** Instance of the plugin. */

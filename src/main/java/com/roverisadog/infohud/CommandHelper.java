@@ -131,6 +131,10 @@ public class CommandHelper {
 				}
 			}
 		}
+		// [/infohud biome reset]
+		else if (args[argsStart].equalsIgnoreCase(CommandExecutor.CMD_BIOMES.get(2))) {
+			Util.sendMsg(sender, Util.resetBrightBiomes());
+		}
 		else {
 			Util.sendMsg(sender, "Usage: " + Util.HLT + "'/" + Util.CMD_NAME + " "
 					+ CommandExecutor.CMD_ADMIN.get(3) + " " + CommandExecutor.CMD_BIOMES);

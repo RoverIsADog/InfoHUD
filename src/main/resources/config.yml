@@ -1,4 +1,4 @@
-infohudVersion: '1.4'
+infohudVersion: '1.5'
 messageUpdateDelay: 5
 biomeUpdateDelay: 40
 colors:
@@ -34,4 +34,12 @@ brightBiomes:
 - ICE_PLAINS_SPIKE
 - ICE_SPIKES
 - FROZEN_RIVER
+- GROVE"
+- SNOWY_SLOPES
+- JAGGED_PEAKS
+- FROZEN_PEAKS
+- STONY_PEAKS
+- WINDSWEPT_HILLS
+- WINDSWEPT_GRAVELLY_HILLS
+- SNOWY_PLAINS
 playerConfig: {}

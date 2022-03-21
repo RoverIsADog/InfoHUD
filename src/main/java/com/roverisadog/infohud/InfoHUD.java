@@ -17,6 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.Collection;
+
 public class InfoHUD extends JavaPlugin {
 
 	protected static InfoHUD instance;
@@ -56,9 +58,9 @@ public class InfoHUD extends JavaPlugin {
 			//Version check
 			//Eg: org.bukkit.craftbukkit.v1_16_R2.blabla
 			String ver = Bukkit.getServer().getClass().getPackage().getName();
-			versionStr = ver.split("\\.")[3];
-			Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]);
-			Util.serverVendor = ver.split("\\.")[2];
+			versionStr = ver.split("\\.")[3]; //v1_16_R2
+			Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
+			Util.serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
 
 			//Attempt to get version-specific NMS packets class.
 			if (!initializeActionBarSender()) {
@@ -73,7 +75,9 @@ public class InfoHUD extends JavaPlugin {
 			biomeUpdateTask = startBiomeUpdaterTask(Util.getBiomeUpdateDelay());
 
 
-			Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on " + Util.WHI + (isSpigot ? "Spigot API" : "NMS") + " Version 1." + Util.apiVersion);
+			Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on "
+					+ Util.WHI + (isSpigot ? "Spigot API" : "NMS")
+					+ " Version 1." + Util.apiVersion);
 		}
 		catch (Exception e) {
 			Util.printToTerminal(e.getMessage());
@@ -89,12 +93,15 @@ public class InfoHUD extends JavaPlugin {
 	}
 
 	/**
-	 * Starts task whose job is to get each player's config and send the right
-	 * message accordingly. Does NOT change any value from {@link PlayerCfg}.
+	 * Starts a synchronous task whose job is to get each player's config and
+	 * send the right message accordingly. Does NOT change any value from the
+	 * {@link PlayerCfg}. Note to self: Don't make asynchronous as it accesses
+	 * non thread-safe methods from bukkit API.
+	 * @param messageUpdateDelay config.yml: messageUpdateDelay
 	 * @return BukkitTask created.
 	 */
-	public BukkitTask startMessageUpdaterTask(long refreshPeriod) {
-		return Bukkit.getScheduler().runTaskTimerAsynchronously(instance, () -> {
+	public BukkitTask startMessageUpdaterTask(long messageUpdateDelay) {
+		return Bukkit.getScheduler().runTaskTimer(instance, () -> {
 			benchmarkStart = System.nanoTime();
 			for (Player p : instance.getServer().getOnlinePlayers()) {
 
@@ -191,14 +198,18 @@ public class InfoHUD extends JavaPlugin {
 				}
 			}
 			Util.benchmark = System.nanoTime() - benchmarkStart;
-		}, 0L, refreshPeriod);
+		}, 0L, messageUpdateDelay);
 	}
 
 	/**
-	 * Runs expensive tasks in a new thread (for now, biome fetching).
+	 * Starts the synchronous task responsible for fetching biomes. Very
+	 * expensive. Note to self: Don't make asynchronous as it accesses non
+	 * thread-safe methods from bukkit API.
+	 * @param biomeUpdateDelay Ticks between each player biomes updates.
+	 *                         Preferably larger. config.yml: biomeUpdateDelay
 	 */
-	public BukkitTask startBiomeUpdaterTask(long refreshPeriod) {
-		return Bukkit.getScheduler().runTaskTimerAsynchronously(instance, () -> {
+	public BukkitTask startBiomeUpdaterTask(long biomeUpdateDelay) {
+		return Bukkit.getScheduler().runTaskTimer(instance, () -> {
 
 			for (Player p : instance.getServer().getOnlinePlayers()) {
 				if (PlayerCfg.isEnabled(p)) {
@@ -208,7 +219,7 @@ public class InfoHUD extends JavaPlugin {
 				}
 			}
 
-		}, 0L, refreshPeriod);
+		}, 0L, biomeUpdateDelay);
 	}
 
 	/**

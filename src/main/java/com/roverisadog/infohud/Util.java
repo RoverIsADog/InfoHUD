@@ -56,7 +56,7 @@ public class Util {
 	/** Currently loaded biomes considered bright. */
 	private static EnumSet<Biome> brightBiomes;
 	private static final String[] defaultBrightBiomes = {
-			"DESERT", "- DESERT_HILLS", "ICE_DESERT", "BEACH", "SNOWY_BEACH", 
+			"DESERT", "DESERT_HILLS", "ICE_DESERT", "BEACH", "SNOWY_BEACH",
 			"COLD_BEACH", "SNOWY_TUNDRA", "COLD_TUNDRA", "ICE_FLATS", "MUTATED_ICE_FLATS",
 			"SNOWY_TAIGA", "SNOWY_TAIGA_HILLS", "SNOWY_TAIGA_MOUNTAINS", "COLD_TAIGA",
 			"COLD_TAIGA_HILLS", "COLD_TAIGA_MOUNTAINS", "ICE_MOUNTAINS", "SNOWY_MOUNTAINS",

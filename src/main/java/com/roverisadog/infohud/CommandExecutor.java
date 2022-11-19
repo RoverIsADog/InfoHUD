@@ -75,8 +75,8 @@ public class CommandExecutor implements TabExecutor {
             send error unknown command
          */
 
-		boolean canUse = sender.hasPermission(Util.PERM_USE);
-		boolean isAdmin = sender.hasPermission(Util.PERM_ADMIN);
+		boolean canUse = sender.hasPermission(Util.PERM_USE) || sender.isOp();
+		boolean isAdmin = sender.hasPermission(Util.PERM_ADMIN) || sender.isOp();
 		boolean isPlayer = (sender instanceof Player);
 		boolean isConsole = (sender instanceof ConsoleCommandSender);
 
@@ -200,8 +200,8 @@ public class CommandExecutor implements TabExecutor {
 	public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
 		boolean isPlayer = sender instanceof Player;
 		boolean isConsole = sender instanceof ConsoleCommandSender;
-		boolean canUse = sender.hasPermission(Util.PERM_USE);
-		boolean isAdmin = sender.hasPermission(Util.PERM_ADMIN);
+		boolean canUse = sender.hasPermission(Util.PERM_USE) || sender.isOp();
+		boolean isAdmin = sender.hasPermission(Util.PERM_ADMIN) || sender.isOp();
 
 		//Does not have infohud.use permission
 		if (isPlayer && !canUse) {
@@ -286,12 +286,10 @@ public class CommandExecutor implements TabExecutor {
 		//Display current player's settings.
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
-			msg.add("");
-			msg.add("Currently "
-					+ (PlayerCfg.isEnabled(p) ? Util.GRN + "enabled" : Util.ERR + "disabled")
-					+ Util.RES + " for "
-					+ (p.hasPermission(Util.PERM_ADMIN) ? p.getDisplayName() + Util.GRN + " [ADMIN]"
-					: p.getDisplayName()));
+			msg.add((PlayerCfg.isEnabled(p) ? Util.GRN + "Enabled" : Util.ERR + "Disabled")
+					+ Util.RES + " for " + p.getDisplayName()
+					+ (p.hasPermission(Util.PERM_ADMIN) || p.isOp()
+					? Util.GRN + " (InfoHUD Admin)" : ""));
 
 			if (PlayerCfg.isEnabled(p)) {
 				PlayerCfg cfg = PlayerCfg.getConfig(p);
@@ -299,27 +297,27 @@ public class CommandExecutor implements TabExecutor {
 				msg.add(Util.HLT + "   time: " + Util.RES + cfg.timeMode.description);
 				msg.add(Util.HLT + "   darkMode: " + Util.RES + cfg.darkMode.description);
 			}
+			msg.add("");
 		}
 
 		//Display normal user commands.
-		msg.add("");
 		msg.add(Util.GRN + "Settings");
 		if (sender instanceof Player) {
-			msg.add(Util.HLT + ">coordinates: " + Util.RES + "Whether or not coordinates are displayed.");
-			msg.add(Util.HLT + ">time: " + Util.RES + "Format the time should be displayed in, if at all.");
-			msg.add(Util.HLT + ">darkMode: " + Util.RES + "Whether to display info with darker colors.");
+			msg.add(Util.HLT + ">coordinates: " + Util.RES + "Enable/Disable coordinates display.");
+			msg.add(Util.HLT + ">time: " + Util.RES + "Time display format (or disable).");
+			msg.add(Util.HLT + ">darkMode: " + Util.RES + "Enable/Disable/Auto using lighter colors.");
 		}
 
 		//Display admin commands.
-		if (sender.hasPermission(Util.PERM_ADMIN) || sender instanceof ConsoleCommandSender) {
+		if (sender.hasPermission(Util.PERM_ADMIN) || sender instanceof ConsoleCommandSender || sender.isOp()) {
 			msg.add(Util.HLT + ">messageUpdateDelay: "
-					+ Util.RES + "Ticks between each update. Higher = better performance.");
+					+ Util.RES + "Ticks between each refresh.");
 			msg.add(Util.HLT + ">reload: "
-					+ Util.RES + "Reloads config.yml. " + Util.ERR + "YOU COULD LOSE SOME SETTINGS.");
+					+ Util.RES + "Reloads config.yml. " + Util.ERR + "(some recent changes may be lost).");
 			msg.add(Util.HLT + ">benchmark: "
-					+ Util.RES + "How long the last update took. A tick is 50ms.");
+					+ Util.RES + "Check how long the last refresh took (1 tick = 50ms).");
 			msg.add(Util.HLT + ">brightBiomes: "
-					+ Util.RES + "Add/Remove biomes where dark mode turns on automatically.");
+					+ Util.RES + "Add/Remove biomes where dark mode can turns on automatically.");
 		}
 
 		String[] msgArr = new String[msg.size()];

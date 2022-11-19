@@ -4,12 +4,7 @@ package com.roverisadog.infohud;
 import com.roverisadog.infohud.command.CoordMode;
 import com.roverisadog.infohud.command.DarkMode;
 import com.roverisadog.infohud.command.TimeMode;
-import com.roverisadog.infohud.message.ActionBarSender;
-import com.roverisadog.infohud.message.ActionBarSenderNMS1_12;
-import com.roverisadog.infohud.message.ActionBarSenderNMS1_16;
-import com.roverisadog.infohud.message.ActionBarSenderNMS1_17;
-import com.roverisadog.infohud.message.ActionBarSenderNMS1_8;
-import com.roverisadog.infohud.message.ActionBarSenderSpigot;
+import com.roverisadog.infohud.message.*;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
@@ -17,24 +12,23 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.Collection;
-
 public class InfoHUD extends JavaPlugin {
 
-	protected static InfoHUD instance;
+	private static InfoHUD instance;
+
+	public static InfoHUD getPlugin() {
+		return instance;
+	}
 
 	public InfoHUD() {
 		instance = this;
 	}
 
-	private static boolean isSpigot;
+	private boolean isSpigot;
 
 	//Version for reflection
-	private static String versionStr;
-	private static ActionBarSender actionBar;
-
-	/** Time elapsed for the last update. */
-	private long benchmarkStart;
+	private String versionStr;
+	private ActionBarSender actionBarSender;
 
 	protected BukkitTask msgSenderTask;
 	protected BukkitTask biomeUpdateTask;
@@ -55,12 +49,14 @@ public class InfoHUD extends JavaPlugin {
 				throw new Exception(Util.ERR + "Error while reading config.yml.");
 			}
 
-			//Version check
-			//Eg: org.bukkit.craftbukkit.v1_16_R2.blabla
+			//Version check eg: org.bukkit.craftbukkit.v1_16_R2.blabla
 			String ver = Bukkit.getServer().getClass().getPackage().getName();
 			versionStr = ver.split("\\.")[3]; //v1_16_R2
 			Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
 			Util.serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
+
+//			Util.printToTerminal("versionStr: %s, apiVersion: %s, serverVendor: %s"
+//					, versionStr, Util.apiVersion, Util.serverVendor);
 
 			//Attempt to get version-specific NMS packets class.
 			if (!initializeActionBarSender()) {
@@ -72,12 +68,16 @@ public class InfoHUD extends JavaPlugin {
 
 			//Start sender and biome updater tasks
 			msgSenderTask = startMessageUpdaterTask(Util.getMessageUpdateDelay());
-			biomeUpdateTask = startBiomeUpdaterTask(Util.getBiomeUpdateDelay());
+			biomeUpdateTask = getBiomeUpdaterTask(Util.getBiomeUpdateDelay());
+
+			// Register action bar listener
+			ActionBarListener abl = new ActionBarListener(actionBarSender);
+			Bukkit.getServer().getPluginManager().registerEvents(abl, this);
 
 
 			Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on "
 					+ Util.WHI + (isSpigot ? "Spigot API" : "NMS")
-					+ " Version 1." + Util.apiVersion);
+					+ " v1." + Util.apiVersion);
 		}
 		catch (Exception e) {
 			Util.printToTerminal(e.getMessage());
@@ -95,14 +95,14 @@ public class InfoHUD extends JavaPlugin {
 	/**
 	 * Starts a synchronous task whose job is to get each player's config and
 	 * send the right message accordingly. Does NOT change any value from the
-	 * {@link PlayerCfg}. Note to self: Don't make asynchronous as it accesses
+	 * {@link PlayerCfg}. Cannot be asynchronous as it accesses
 	 * non thread-safe methods from bukkit API.
 	 * @param messageUpdateDelay config.yml: messageUpdateDelay
 	 * @return BukkitTask created.
 	 */
 	public BukkitTask startMessageUpdaterTask(long messageUpdateDelay) {
 		return Bukkit.getScheduler().runTaskTimer(instance, () -> {
-			benchmarkStart = System.nanoTime();
+			long benchmarkStart = System.nanoTime();
 			for (Player p : instance.getServer().getOnlinePlayers()) {
 
 				//Skip players that are not on the list
@@ -202,16 +202,16 @@ public class InfoHUD extends JavaPlugin {
 	}
 
 	/**
-	 * Starts the synchronous task responsible for fetching biomes. Very
-	 * expensive. Note to self: Don't make asynchronous as it accesses non
-	 * thread-safe methods from bukkit API.
-	 * @param biomeUpdateDelay Ticks between each player biomes updates.
-	 *                         Preferably larger. config.yml: biomeUpdateDelay
+	 * Gets the synchronous task responsible for fetching biomes. Relatively very expensive.
+	 * Not asynchronous as it accesses non thread-safe methods from the bukkit API.
+	 * @param biomeUpdateDelay Ticks between each player biomes updates, preferably larger.
+	 *                         config.yml: biomeUpdateDelay
 	 */
-	public BukkitTask startBiomeUpdaterTask(long biomeUpdateDelay) {
+	private BukkitTask getBiomeUpdaterTask(long biomeUpdateDelay) {
 		return Bukkit.getScheduler().runTaskTimer(instance, () -> {
 
-			for (Player p : instance.getServer().getOnlinePlayers()) {
+			//getOnlinePlayers() not thread safe
+			for (Player p : getServer().getOnlinePlayers()) {
 				if (PlayerCfg.isEnabled(p)) {
 					if (PlayerCfg.getConfig(p).darkMode == DarkMode.AUTO) {
 						Util.updateIsInBrightBiome(p);
@@ -223,44 +223,55 @@ public class InfoHUD extends JavaPlugin {
 	}
 
 	/**
-	 *  Uses reflection to get version specific NMS packet-related classes.
-	 *  Preferred to Spigot built in method for wider compatibility.
+	 * Utility method to initialise the ActionBarSender, depending on server
+	 * version and vendor, can be spigot API wrapper (spigot/paper, preferred)
+	 * or NMS (craftbukkit). NMS sender gotten through reflection and needs to
+	 * be updated every update.
+	 * @return Whether an {@link ActionBarSender} initialized correctly.
 	 */
-	private static boolean initializeActionBarSender() {
+	private boolean initializeActionBarSender() {
 
-		// Use spigot API when possible by checking method exists (DNE in 1.8, early spigot builds for 1.9)
+		// Use spigot API when possible by checking Player$Spigot and method exists.
+		// (Actionbar DNE MC < 1.9, and API DNE craftbukkit / early 1.9 spigot builds)
 		try {
-			Player.Spigot.class.getDeclaredMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
+//			Player.Spigot.class.getMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
+			Class.forName("org.bukkit.entity.Player$Spigot").getDeclaredMethod(
+					"sendMessage", ChatMessageType.class, BaseComponent.class); // Exists
+//			Util.printToTerminal("Classname: " + Player.Spigot.class);
 			isSpigot = true;
-		} catch (Exception ignored) {
+		} catch (Exception | Error ignored) {
+//			ignored.printStackTrace();
 			isSpigot = false;
 		}
 
 		// Prefer using spigot api when possible
 		if (isSpigot) {
 			Util.printToTerminal(Util.GRN + "Using Spigot API");
-			actionBar = new ActionBarSenderSpigot();
+			actionBarSender = new ActionBarSenderSpigot();
 		}
 		// Fallback to NMS if using craftbukkit / very old spigot
 		else {
-			Util.printToTerminal(Util.GRN + "Spigot API unavailable or incompatible: falling back to NMS");
+			Util.printToTerminal(Util.GRN + "Spigot API unavailable or incompatible:" +
+					"falling back to NMS");
 			try {
 				// 1.8 - 1.11
 				if (Util.apiVersion < 12)
-					actionBar = new ActionBarSenderNMS1_8(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_8(versionStr);
 				// 1.11 - 1.15
 				else if (Util.apiVersion < 16)
-					actionBar = new ActionBarSenderNMS1_12(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_12(versionStr);
 				// 1.16
 				else if (Util.apiVersion < 17)
-					actionBar = new ActionBarSenderNMS1_16(versionStr);
-				// 1.17+ CHECK FOR CHANGES EACH UPDATES!!!
-				else
-					actionBar = new ActionBarSenderNMS1_17(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_16(versionStr);
+				// 1.17
+				else if (Util.apiVersion < 18)
+					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
+				else // FIXME update NMS
+					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
 
-			} catch (Exception e) { // Reflection error
-				Util.printToTerminal(Util.ERR + "Exception while initializing packets with NMS version 1."
-						+ versionStr + ". Version may be incompatible.");
+			} catch (Exception | Error e) { // Reflection error
+				Util.printToTerminal(Util.ERR + "Exception while initializing packets with" +
+						"NMS v1." + versionStr + ". Version may be incompatible.");
 				e.printStackTrace();
 				return false;
 			}
@@ -270,13 +281,13 @@ public class InfoHUD extends JavaPlugin {
 	}
 
 	/**
-	 * Sends a message to the player's actionbar using reflected methods.
+	 * Sends a message to a player's actionbar using {@link ActionBarSender}
 	 * @param p Recipient player.
-	 * @param msg Message to send.
+	 * @param msg Message to send (as is).
 	 */
-	private static void sendToActionBar(Player p, String msg) {
+	private void sendToActionBar(Player p, String msg) {
 		try {
-			actionBar.sendToActionBar(p, msg);
+			actionBarSender.sendToActionBar(p, msg);
 		} catch (Exception e) {
 			Util.printToTerminal("Fatal error while sending packets. Shutting down...");
 			Bukkit.getPluginManager().disablePlugin(instance);

@@ -15,7 +15,7 @@ import java.util.UUID;
 public class PlayerCfg {
 
 	//Player management
-	static Map<UUID, PlayerCfg> playerHash;
+	static Map<UUID, PlayerCfg> playerMap;
 	protected UUID id;
 
 	protected CoordMode coordMode;
@@ -26,14 +26,14 @@ public class PlayerCfg {
 
 	/** Checks that the player is in the list.*/
 	static boolean isEnabled(Player player) {
-		return playerHash.containsKey(player.getUniqueId());
+		return playerMap.containsKey(player.getUniqueId());
 	}
 
 	static PlayerCfg getConfig(Player player) {
-		return playerHash.get(player.getUniqueId());
+		return playerMap.get(player.getUniqueId());
 	}
 
-	/* ------------------------------------------ Player Management ------------------------------------------- */
+	/* ---------------------------------- Player Management ---------------------------------- */
 
 	/**
 	 * Saves a player's UUID into player list. Assumes
@@ -45,15 +45,15 @@ public class PlayerCfg {
 			return true;
 		}
 		//Putting default values
-		playerHash.put(player.getUniqueId(), new PlayerCfg(player.getUniqueId()));
+		playerMap.put(player.getUniqueId(), new PlayerCfg(player.getUniqueId()));
 
 		//Saves changes
-		InfoHUD.instance.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(),
-				playerHash.get(player.getUniqueId()).toMap());
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId(),
+				playerMap.get(player.getUniqueId()).toMap());
+		InfoHUD.getPlugin().saveConfig();
 
-		Util.sendMsg(player, "InfoHUD is now "
-				+ (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
+		Util.sendMsg(player, "InfoHUD is now " + (isEnabled(player)
+				? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
 		return true;
 	}
 
@@ -64,39 +64,39 @@ public class PlayerCfg {
 			return true;
 		}
 
-		playerHash.remove(player.getUniqueId());
+		playerMap.remove(player.getUniqueId());
 
 		//Saves changes
-		InfoHUD.instance.getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId().toString(), null);
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().getConfig().set(Util.PLAYER_CFG_PATH + "." + player.getUniqueId(), null);
+		InfoHUD.getPlugin().saveConfig();
 
-		Util.sendMsg(player, "InfoHUD is now "
-				+ (isEnabled(player) ? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
+		Util.sendMsg(player, "InfoHUD is now " + (isEnabled(player)
+				? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
 		return true;
 	}
 
-	/* --------------------------------------------- Coords Mode ---------------------------------------------- */
+	/* ---------------------------------- Coords Mode ---------------------------------- */
 
 	/** Returns coordinates display settings for player. */
 	static CoordMode getCoordinatesMode(Player p) {
-		return playerHash.get(p.getUniqueId()).coordMode;
+		return playerMap.get(p.getUniqueId()).coordMode;
 	}
 
 	/** Changes coordinates mode and returns new mode. */
 	static String setCoordinatesMode(Player p, CoordMode newMode) {
-		playerHash.get(p.getUniqueId()).coordMode = newMode;
+		playerMap.get(p.getUniqueId()).coordMode = newMode;
 		//Saves changes
-		InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
-				playerHash.get(p.getUniqueId()).toMap());
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId(),
+				playerMap.get(p.getUniqueId()).toMap());
+		InfoHUD.getPlugin().saveConfig();
 		return "Coordinates display set to: " + Util.HLT + newMode.description + Util.RES + ".";
 	}
 
-	/* ---------------------------------------------- Time Mode ----------------------------------------------- */
+	/* ---------------------------------- Time Mode ---------------------------------- */
 
 	/** Returns time display settings for player. */
 	static TimeMode getTimeMode(Player p) {
-		return playerHash.get(p.getUniqueId()).timeMode;
+		return playerMap.get(p.getUniqueId()).timeMode;
 	}
 
 	/** Changes time mode and returns new mode. */
@@ -105,29 +105,29 @@ public class PlayerCfg {
 			return Util.ERR + "Villager schedule display is meaningless for versions before 1.14.";
 		}
 
-		playerHash.get(p.getUniqueId()).timeMode = newMode;
+		playerMap.get(p.getUniqueId()).timeMode = newMode;
 		//Saves changes
-		InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
-				playerHash.get(p.getUniqueId()).toMap());
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId(),
+				playerMap.get(p.getUniqueId()).toMap());
+		InfoHUD.getPlugin().saveConfig();
 		return "Time display set to: " + Util.HLT + newMode.description + Util.RES + ".";
 	}
 
-	/* ---------------------------------------------- Dark Mode ----------------------------------------------- */
+	/* ---------------------------------- Dark Mode ---------------------------------- */
 
 	/** Returns dark mode settings for player. */
 	static DarkMode getDarkMode(Player p) {
-		return playerHash.get(p.getUniqueId()).darkMode;
+		return playerMap.get(p.getUniqueId()).darkMode;
 	}
 
 	/** Changes dark mode settings and returns new settings. */
 	static String setDarkMode(Player p, DarkMode newMode) {
-		playerHash.get(p.getUniqueId()).darkMode = newMode;
+		playerMap.get(p.getUniqueId()).darkMode = newMode;
 
 		//Saves changes
-		InfoHUD.instance.getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId().toString(),
-				playerHash.get(p.getUniqueId()).toMap());
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().getConfig().createSection(Util.PLAYER_CFG_PATH + "." + p.getUniqueId(),
+				playerMap.get(p.getUniqueId()).toMap());
+		InfoHUD.getPlugin().saveConfig();
 		return "Dark mode set to: " + Util.HLT + newMode.description + Util.RES + ".";
 	}
 
@@ -142,7 +142,7 @@ public class PlayerCfg {
 		return tmp;
 	}
 
-	/* ---------------------------------------------- Storage ----------------------------------------------- */
+	/* ---------------------------------- Storage ---------------------------------- */
 
 	PlayerCfg(UUID id, CoordMode coordMode, TimeMode timeMode, DarkMode darkMode) {
 		this.id = id;

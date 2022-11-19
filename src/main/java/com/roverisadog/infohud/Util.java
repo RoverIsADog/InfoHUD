@@ -1,13 +1,12 @@
 
 package com.roverisadog.infohud;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import com.roverisadog.infohud.command.CoordMode;
@@ -97,9 +96,9 @@ public class Util {
 	static boolean loadConfig() {
 		try {
 
-			InfoHUD.instance.reloadConfig();
+			InfoHUD.getPlugin().reloadConfig();
 
-			FileConfiguration file = InfoHUD.instance.getConfig();
+			FileConfiguration file = InfoHUD.getPlugin().getConfig();
 
 			//Get the message update delay.
 			messageUpdateDelay = file.getLong(MESSAGE_UPDATE_DELAY_PATH);
@@ -129,7 +128,7 @@ public class Util {
 			}
 
 			//Building player settings hash
-			PlayerCfg.playerHash = new HashMap<>(); //Map<UUID , PlayerConfig>
+			PlayerCfg.playerMap = new ConcurrentHashMap<>(); //Map<UUID , PlayerConfig>
 
 			//For every section of "playerCfg" : UUID in string form
 			for (String playerStr : file.getConfigurationSection(PLAYER_CFG_PATH).getKeys(false)) {
@@ -145,7 +144,7 @@ public class Util {
 				PlayerCfg playerCfg = loadPlayerSettings(playerID, playerSettings);
 
 				//Translate into faster mappings
-				PlayerCfg.playerHash.put(playerID, playerCfg);
+				PlayerCfg.playerMap.put(playerID, playerCfg);
 			}
 
 			//Loading biomes
@@ -204,7 +203,7 @@ public class Util {
 	static void updateConfigFile() {
 		String msg = GRN + "Old config file detected: updating...";
 
-		FileConfiguration file = InfoHUD.instance.getConfig();
+		FileConfiguration file = InfoHUD.getPlugin().getConfig();
 
 		//Saves old data into code.
 		List<String> oldBiomeList = file.getStringList(BRIGHT_BIOMES_PATH);
@@ -212,12 +211,12 @@ public class Util {
 
 		//Set all config data to null, and save (wipe)
 		for (String key : file.getKeys(false)) {
-			InfoHUD.instance.getConfig().set(key, null);
+			InfoHUD.getPlugin().getConfig().set(key, null);
 		}
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().saveConfig();
 
 		//Rewrite old data and save.
-		file.set(VERSION_PATH, InfoHUD.instance.getDescription().getVersion()); //infohudVersion: '1.3'
+		file.set(VERSION_PATH, InfoHUD.getPlugin().getDescription().getVersion()); //infohudVersion: '1.3'
 		file.set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay); //messageUpdateDelay: 5
 		file.set(BIOME_UPDATE_DELAY_PATH, DEFAULT_BIOME_UPDATE_DELAY); //biomeUpdateDelay: 40
 
@@ -227,11 +226,11 @@ public class Util {
 		file.set(COLOR_PATH + ".dark2", ChatColor.DARK_AQUA.name());
 
 		file.set(BRIGHT_BIOMES_PATH, oldBiomeList); //brightBiomes:
-		for (UUID id : PlayerCfg.playerHash.keySet()) { //playerConfig:
+		for (UUID id : PlayerCfg.playerMap.keySet()) { //playerConfig:
 			file.createSection(PLAYER_CFG_PATH + "." + id.toString(),
-					PlayerCfg.playerHash.get(id).toMap());
+					PlayerCfg.playerMap.get(id).toMap());
 		}
-		InfoHUD.instance.saveConfig();
+		InfoHUD.getPlugin().saveConfig();
 
 		msg += " Done";
 		printToTerminal(msg);
@@ -257,7 +256,7 @@ public class Util {
 
 	/** Returns whether the player is in a bright biome for darkmode. */
 	static void updateIsInBrightBiome(Player p) {
-		PlayerCfg.playerHash.get(p.getUniqueId()).isInBrightBiome
+		PlayerCfg.playerMap.get(p.getUniqueId()).isInBrightBiome
 				= brightBiomes.contains(p.getLocation().getBlock().getBiome());
 	}
 
@@ -287,10 +286,10 @@ public class Util {
 				brightBiomes.add(b);
 				//Update config.yml. APPEND MODE to not lose biomes from other versions.
 				List<String> biomeList =
-						new LinkedList<>(InfoHUD.instance.getConfig().getStringList(BRIGHT_BIOMES_PATH));
+						new LinkedList<>(InfoHUD.getPlugin().getConfig().getStringList(BRIGHT_BIOMES_PATH));
 				biomeList.add(b.toString());
-				InfoHUD.instance.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
-				InfoHUD.instance.saveConfig();
+				InfoHUD.getPlugin().getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
+				InfoHUD.getPlugin().saveConfig();
 				return GRN + "Added " + HLT + b + GRN + " to the bright biomes list.";
 			}
 		} catch (Exception e) {
@@ -309,10 +308,10 @@ public class Util {
 			if (brightBiomes.contains(b)) {
 				//Update config.yml. APPEND MODE to not lose biomes from other versions.
 				List<String> biomeList =
-						new LinkedList<>(InfoHUD.instance.getConfig().getStringList(BRIGHT_BIOMES_PATH));
+						new LinkedList<>(InfoHUD.getPlugin().getConfig().getStringList(BRIGHT_BIOMES_PATH));
 				biomeList.remove(b.toString());
-				InfoHUD.instance.getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
-				InfoHUD.instance.saveConfig();
+				InfoHUD.getPlugin().getConfig().set(BRIGHT_BIOMES_PATH, biomeList);
+				InfoHUD.getPlugin().saveConfig();
 
 				//Remove from set
 				brightBiomes.remove(b);
@@ -330,8 +329,8 @@ public class Util {
 
 	static String resetBrightBiomes() {
 		try {
-			InfoHUD.instance.getConfig().set(BRIGHT_BIOMES_PATH, defaultBrightBiomes);
-			InfoHUD.instance.saveConfig();
+			InfoHUD.getPlugin().getConfig().set(BRIGHT_BIOMES_PATH, defaultBrightBiomes);
+			InfoHUD.getPlugin().saveConfig();
 			brightBiomes.clear();
 			for (String b : defaultBrightBiomes) {
 				try {
@@ -413,12 +412,12 @@ public class Util {
 				messageUpdateDelay = newDelay;
 
 				//Save the new value.
-				InfoHUD.instance.getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
-				InfoHUD.instance.saveConfig();
+				InfoHUD.getPlugin().getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
+				InfoHUD.getPlugin().saveConfig();
 
 				//Stop plugin and restart with new refresh period.
-				InfoHUD.instance.msgSenderTask.cancel();
-				InfoHUD.instance.msgSenderTask = InfoHUD.instance.startMessageUpdaterTask(getMessageUpdateDelay());
+				InfoHUD.getPlugin().msgSenderTask.cancel();
+				InfoHUD.getPlugin().msgSenderTask = InfoHUD.getPlugin().startMessageUpdaterTask(getMessageUpdateDelay());
 
 				sendMsg(sender, "Message update delay set to " + HLT + newDelay + RES + ".");
 
@@ -435,9 +434,9 @@ public class Util {
 		boolean success;
 		try {
 			//Cancel task, reload config, and restart task.
-			InfoHUD.instance.msgSenderTask.cancel();
+			InfoHUD.getPlugin().msgSenderTask.cancel();
 			success = loadConfig();
-			InfoHUD.instance.msgSenderTask = InfoHUD.instance.startMessageUpdaterTask(getMessageUpdateDelay());
+			InfoHUD.getPlugin().msgSenderTask = InfoHUD.getPlugin().startMessageUpdaterTask(getMessageUpdateDelay());
 
 			if (success) {
 				sendMsg(sender, Util.GRN + "Reloaded successfully.");
@@ -453,9 +452,14 @@ public class Util {
 		}
 	}
 
-	/** Shortcut to print to the console. */
+	/** Shortcut to print to server console. */
 	static void printToTerminal(String msg) {
 		Bukkit.getConsoleSender().sendMessage(SIGNATURE + msg);
+	}
+
+	/** Shortcut to printf to server console. */
+	static void printToTerminal(String msg, Object ... args) {
+		printToTerminal(String.format(msg, args));
 	}
 
 	/**
@@ -465,7 +469,7 @@ public class Util {
 	static boolean getBenchmark(CommandSender sender) {
 		sendMsg(sender, "InfoHUD took " + Util.HLT + String.format("%.3f", Util.benchmark / (1000000D)) + Util.RES
 				+ " ms (" + Util.HLT + String.format("%.2f", (Util.benchmark / (10000D)) / 50D)
-				+ Util.RES + " % tick) during the last update.");
+				+ Util.RES + "% tick) during the last tick.");
 		return true;
 	}
 

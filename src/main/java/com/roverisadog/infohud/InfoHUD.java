@@ -1,13 +1,12 @@
 
 package com.roverisadog.infohud;
 
-import com.roverisadog.infohud.command.CoordMode;
-import com.roverisadog.infohud.command.DarkMode;
-import com.roverisadog.infohud.command.TimeMode;
+import com.roverisadog.infohud.config.*;
 import com.roverisadog.infohud.message.*;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -16,12 +15,12 @@ public class InfoHUD extends JavaPlugin {
 
 	private static InfoHUD instance;
 
-	public static InfoHUD getPlugin() {
-		return instance;
-	}
-
 	public InfoHUD() {
 		instance = this;
+	}
+
+	public static InfoHUD getPlugin() {
+		return instance;
 	}
 
 	private boolean isSpigot;
@@ -30,8 +29,15 @@ public class InfoHUD extends JavaPlugin {
 	private String versionStr;
 	private ActionBarSender actionBarSender;
 
+	// Tasks
 	protected BukkitTask msgSenderTask;
 	protected BukkitTask biomeUpdateTask;
+
+	private PlayerConfig playerConfig;
+
+	public PlayerConfig getPlayerConfig() {
+		return playerConfig;
+	}
 
 	/**
 	 * Initial setup:
@@ -42,10 +48,11 @@ public class InfoHUD extends JavaPlugin {
 	public void onEnable() {
 		try {
 			Util.printToTerminal(Util.GRN + "InfoHUD Enabling...");
+			this.saveDefaultConfig(); // Does nothing if config.yml already exists.
 
 			//Save initial cfg or load.
-			this.saveDefaultConfig(); //Silent fails if config.yml already exists
-			if (!Util.loadConfig()) {
+			this.playerConfig = new PlayerConfig(this);
+			if (!playerConfig.loadConfig()) {
 				throw new Exception(Util.ERR + "Error while reading config.yml.");
 			}
 
@@ -58,12 +65,12 @@ public class InfoHUD extends JavaPlugin {
 //			Util.printToTerminal("versionStr: %s, apiVersion: %s, serverVendor: %s"
 //					, versionStr, Util.apiVersion, Util.serverVendor);
 
-			//Attempt to get version-specific NMS packets class.
+			// Either use spigot API or try to use NMS otherwise.
 			if (!initializeActionBarSender()) {
 				throw new Exception(Util.ERR + "Version error.");
 			}
 
-			//Setup command executor
+			// Setup command executor
 			this.getCommand(Util.CMD_NAME).setExecutor(new CommandExecutor(this));
 
 			//Start sender and biome updater tasks
@@ -106,16 +113,16 @@ public class InfoHUD extends JavaPlugin {
 			for (Player p : instance.getServer().getOnlinePlayers()) {
 
 				//Skip players that are not on the list
-				if (!PlayerCfg.isEnabled(p)) {
+				if (!playerConfig.isEnabled(p)) {
 					continue;
 				}
 
 				//Assumes that online players << saved players
 
-				PlayerCfg cfg = PlayerCfg.getConfig(p);
+				PlayerCfg cfg = playerConfig.getConfig(p);
 
-				if (cfg.coordMode == CoordMode.DISABLED && cfg.timeMode == TimeMode.DISABLED) {
-					PlayerCfg.removePlayer(p);
+				if (cfg.getCoordMode() == CoordMode.DISABLED && cfg.getTimeMode() == TimeMode.DISABLED) {
+					playerConfig.removePlayer(p);
 					continue;
 				}
 
@@ -123,8 +130,8 @@ public class InfoHUD extends JavaPlugin {
 				String color1; //Text
 				String color2; //Values
 
-				if (cfg.darkMode == DarkMode.AUTO) {
-					if (cfg.isInBrightBiome) {
+				if (cfg.getDarkMode() == DarkMode.AUTO) {
+					if (cfg.isInBrightBiome()) {
 						color1 = Util.dark1;
 						color2 = Util.dark2;
 					}
@@ -133,7 +140,7 @@ public class InfoHUD extends JavaPlugin {
 						color2 = Util.bright2;
 					}
 				}
-				else if (cfg.darkMode == DarkMode.DISABLED) {
+				else if (cfg.getDarkMode() == DarkMode.DISABLED) {
 					color1 = Util.bright1;
 					color2 = Util.bright2;
 				}
@@ -143,8 +150,8 @@ public class InfoHUD extends JavaPlugin {
 				}
 
 				//Coordinates enabled
-				if (cfg.coordMode == CoordMode.ENABLED) {
-					switch (cfg.timeMode) {
+				if (cfg.getCoordMode() == CoordMode.ENABLED) {
+					switch (cfg.getTimeMode()) {
 						case DISABLED:
 							sendToActionBar(p, color1 + "XYZ: "
 									+ color2 + CoordMode.getCoordinates(p) + " "
@@ -179,8 +186,8 @@ public class InfoHUD extends JavaPlugin {
 				}
 
 				//Coordinates disabled
-				else if (cfg.coordMode == CoordMode.DISABLED) {
-					switch (cfg.timeMode) {
+				else if (cfg.getCoordMode() == CoordMode.DISABLED) {
+					switch (cfg.getTimeMode()) {
 						case CURRENT_TICK:
 							sendToActionBar(p, color2 + TimeMode.getTimeTicks(p));
 							break;
@@ -212,9 +219,9 @@ public class InfoHUD extends JavaPlugin {
 
 			//getOnlinePlayers() not thread safe
 			for (Player p : getServer().getOnlinePlayers()) {
-				if (PlayerCfg.isEnabled(p)) {
-					if (PlayerCfg.getConfig(p).darkMode == DarkMode.AUTO) {
-						Util.updateIsInBrightBiome(p);
+				if (playerConfig.isEnabled(p)) {
+					if (playerConfig.getConfig(p).getDarkMode() == DarkMode.AUTO) {
+						playerConfig.updateIsInBrightBiome(p);
 					}
 				}
 			}
@@ -278,6 +285,33 @@ public class InfoHUD extends JavaPlugin {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Stops all tasks, reloads content of config.yml and restarts tasks with the updated values.
+	 * @param sender Sender who issued the reload command.
+	 */
+	public void reload(CommandSender sender) {
+		boolean success;
+		try {
+			// Cancel tasks, reload config, and restart tasks.
+			msgSenderTask.cancel();
+			biomeUpdateTask.cancel();
+			success = playerConfig.loadConfig();
+			msgSenderTask = startMessageUpdaterTask(Util.getMessageUpdateDelay());
+			biomeUpdateTask = getBiomeUpdaterTask(Util.getBiomeUpdateDelay());
+
+			if (success) {
+				Util.sendMsg(sender, Util.GRN + "Reloaded successfully.");
+			}
+			else {
+				Util.sendMsg(sender, Util.ERR + "Reload failed.");
+			}
+		}
+		catch (Exception e) {
+			Util.sendMsg(sender, Util.ERR + "An internal error has occurred.");
+			e.printStackTrace();
+		}
 	}
 
 	/**

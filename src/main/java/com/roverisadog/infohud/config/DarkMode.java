@@ -1,4 +1,4 @@
-package com.roverisadog.infohud.command;
+package com.roverisadog.infohud.config;
 
 import java.util.Arrays;
 import java.util.List;
@@ -26,24 +26,43 @@ public enum DarkMode {
 		this.description = description;
 	}
 
-	public static DarkMode get(int id) {
+	/**
+	 * Get the dark mode setting enum value corresponding to a numerical ID.
+	 * 0: Disabled, 1: Enabled, 2: Auto.
+	 * Only to be used to parse older versions of config.yml.
+	 * @param id Numerical ID for the dark mode setting.
+	 * @return Enum value.
+	 * @throws NullPointerException If unknown ID.
+	 */
+	@Deprecated
+	public static DarkMode get(int id) throws NullPointerException {
 		for (DarkMode dm : DarkMode.values()) {
 			if (dm.id == id) {
 				return dm;
 			}
 		}
-		return null;
+		throw new NullPointerException();
 	}
 
-	public static DarkMode get(String id) {
+	/**
+	 * Gets the dark mode setting enum value from a name.
+	 * @param name Name of the dark mode setting.
+	 * @return Enum value.
+	 * @throws NullPointerException If unknown name.
+	 */
+	public static DarkMode get(String name) throws NullPointerException {
 		for (DarkMode dm : DarkMode.values()) {
-			if (dm.name.equalsIgnoreCase(id)) {
+			if (dm.name.equalsIgnoreCase(name)) {
 				return dm;
 			}
 		}
-		return null;
+		throw new NullPointerException();
 	}
 
+	/**
+	 * Gets the string representation of the dark mode setting.
+	 * @return Name.
+	 */
 	@Override
 	public String toString() {
 		return name;

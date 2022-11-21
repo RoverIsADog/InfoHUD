@@ -72,7 +72,7 @@ playerConfig:
     coordinatesMode: enabled
     timeMode: clock12
     darkMode: auto
-  ...
+...
 ```
 
 ## See also

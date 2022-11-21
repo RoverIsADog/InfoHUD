@@ -4,19 +4,12 @@ package com.roverisadog.infohud;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.roverisadog.infohud.command.CoordMode;
-import com.roverisadog.infohud.command.DarkMode;
-import com.roverisadog.infohud.command.TimeMode;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Biome;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 /** Helper class. */
@@ -53,7 +46,7 @@ public class Util {
 	public static String serverVendor;
 
 	/** Currently loaded biomes considered bright. */
-	private static EnumSet<Biome> brightBiomes;
+	public static EnumSet<Biome> brightBiomes;
 	private static final String[] defaultBrightBiomes = {
 			"DESERT", "DESERT_HILLS", "ICE_DESERT", "BEACH", "SNOWY_BEACH",
 			"COLD_BEACH", "SNOWY_TUNDRA", "COLD_TUNDRA", "ICE_FLATS", "MUTATED_ICE_FLATS",
@@ -84,186 +77,35 @@ public class Util {
 
 	//Performance
 	/** Delay between each actionbar message update. */
-	private static long messageUpdateDelay;
+	public static long messageUpdateDelay;
 	/** Delay between each biome detection update. */
-	private static long biomeUpdateDelay = 40L;
+	public static long biomeUpdateDelay = 40L;
 
 	static long benchmark = 0;
 
-	static boolean isFromOlderVersion = false;
-
-	/** Loads disk contents of config.yml into memory. Returns false if an unhandled exception is found. */
-	static boolean loadConfig() {
-		try {
-
-			InfoHUD.getPlugin().reloadConfig();
-
-			FileConfiguration file = InfoHUD.getPlugin().getConfig();
-
-			//Get the message update delay.
-			messageUpdateDelay = file.getLong(MESSAGE_UPDATE_DELAY_PATH);
-			//Older versions
-			if (messageUpdateDelay == 0L) {
-				messageUpdateDelay = DEFAULT_MESSAGE_UPDATE_DELAY;
-			}
-
-			//Get the biome update delay.
-			biomeUpdateDelay = file.getLong(BIOME_UPDATE_DELAY_PATH);
-			if (biomeUpdateDelay == 0L) {
-				biomeUpdateDelay = DEFAULT_BIOME_UPDATE_DELAY; //Default value.
-			}
-
-			//Get colors
-			try {
-				bright1 = getColor(file.getString(COLOR_PATH + ".bright1")).toString();
-				bright2 = getColor(file.getString(COLOR_PATH + ".bright2")).toString();
-				dark1 = getColor(file.getString(COLOR_PATH + ".dark1")).toString();
-				dark2 = getColor(file.getString(COLOR_PATH + ".dark2")).toString();
-			} catch (Exception e) {
-				printToTerminal(ERR + "Error loading one or more colors, using default values.");
-				bright1 = Util.GLD;
-				bright2 = Util.WHI;
-				dark1 = Util.DBLU;
-				dark2 = Util.DAQA;
-			}
-
-			//Building player settings hash
-			PlayerCfg.playerMap = new ConcurrentHashMap<>(); //Map<UUID , PlayerConfig>
-
-			//For every section of "playerCfg" : UUID in string form
-			for (String playerStr : file.getConfigurationSection(PLAYER_CFG_PATH).getKeys(false)) {
-
-				//Get UUID from String
-				UUID playerID = UUID.fromString(playerStr);
-
-				//Get raw mapping of the player's settings
-				Map<String, Object> playerSettings =
-						file.getConfigurationSection(PLAYER_CFG_PATH + "." + playerStr).getValues(false);
-
-				//Decode into enumerated types.
-				PlayerCfg playerCfg = loadPlayerSettings(playerID, playerSettings);
-
-				//Translate into faster mappings
-				PlayerCfg.playerMap.put(playerID, playerCfg);
-			}
-
-			//Loading biomes
-			brightBiomes = EnumSet.noneOf(Biome.class);
-			for (String currentBiome : file.getStringList(BRIGHT_BIOMES_PATH)) {
-				try {
-					Biome bio = Biome.valueOf(currentBiome);
-					brightBiomes.add(bio);
-				}
-				catch (Exception ignored) {
-					//Biome misspelled, nonexistent, from future or past version.
-				}
-			}
-
-			if (isFromOlderVersion) {
-				updateConfigFile();
-				isFromOlderVersion = false;
-			}
-
-			return true;
-		} catch (Exception e) {
-			e.printStackTrace();
-			return false;
-		}
-	}
-
 	/**
-	 * Loads a specific player's configuration from a Map.
-	 * @param map Map to read from.
-	 * @return PlayerCfg containing the desired values.
-	 */
-	static PlayerCfg loadPlayerSettings(UUID id, Map<String, Object> map) {
-
-		CoordMode coordMode;
-		TimeMode timeMode;
-		DarkMode darkMode;
-
-		//Is from a version before InfoHUD 1.2 (Stored as int)
-		if (map.get(CoordMode.cfgKey) instanceof Integer) {
-			isFromOlderVersion = true;
-			coordMode = CoordMode.get((int) map.get(CoordMode.cfgKey));
-			timeMode = TimeMode.get((int) map.get(TimeMode.cfgKey));
-			darkMode = DarkMode.get((int) map.get(DarkMode.cfgKey));
-		}
-		//Is from newer versions (stored as String)
-		else {
-			coordMode = CoordMode.get((String) map.get(CoordMode.cfgKey));
-			timeMode = TimeMode.get((String) map.get(TimeMode.cfgKey));
-			darkMode = DarkMode.get((String) map.get(DarkMode.cfgKey));
-		}
-
-		return new PlayerCfg(id, coordMode, timeMode, darkMode);
-	}
-
-	/** Updates old config file to new format. */
-	static void updateConfigFile() {
-		String msg = GRN + "Old config file detected: updating...";
-
-		FileConfiguration file = InfoHUD.getPlugin().getConfig();
-
-		//Saves old data into code.
-		List<String> oldBiomeList = file.getStringList(BRIGHT_BIOMES_PATH);
-		messageUpdateDelay = file.getLong("refreshRate"); //Old name
-
-		//Set all config data to null, and save (wipe)
-		for (String key : file.getKeys(false)) {
-			InfoHUD.getPlugin().getConfig().set(key, null);
-		}
-		InfoHUD.getPlugin().saveConfig();
-
-		//Rewrite old data and save.
-		file.set(VERSION_PATH, InfoHUD.getPlugin().getDescription().getVersion()); //infohudVersion: '1.3'
-		file.set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay); //messageUpdateDelay: 5
-		file.set(BIOME_UPDATE_DELAY_PATH, DEFAULT_BIOME_UPDATE_DELAY); //biomeUpdateDelay: 40
-
-		file.set(COLOR_PATH + ".bright1", ChatColor.GOLD.name());
-		file.set(COLOR_PATH + ".bright2", ChatColor.WHITE.name());
-		file.set(COLOR_PATH + ".dark1", ChatColor.DARK_BLUE.name());
-		file.set(COLOR_PATH + ".dark2", ChatColor.DARK_AQUA.name());
-
-		file.set(BRIGHT_BIOMES_PATH, oldBiomeList); //brightBiomes:
-		for (UUID id : PlayerCfg.playerMap.keySet()) { //playerConfig:
-			file.createSection(PLAYER_CFG_PATH + "." + id.toString(),
-					PlayerCfg.playerMap.get(id).toMap());
-		}
-		InfoHUD.getPlugin().saveConfig();
-
-		msg += " Done";
-		printToTerminal(msg);
-	}
-
-	/**
-	 * Attempts to get a color from a given name.
+	 * Utility method that attempts to get a ChatColor from a given name.
 	 * @param name Name to check.
-	 * @return Matching color.
-	 * @throws Exception If no matching color is found.
-	 * @see <a href="https://minecraft.gamepedia.com/Formatting_codes">Color codes (ALLCAPS)</a>
+	 * @return The corresponding ChatColor.
+	 * @throws NullPointerException If the colour is not found.
+	 * @see <a href="https://minecraft.gamepedia.com/Formatting_codes">List of colour codes</a>
 	 */
-	private static ChatColor getColor(String name) throws Exception {
+	public static ChatColor getColor(String name) {
 		for (ChatColor col : ChatColor.values()) {
 			if (col.name().equalsIgnoreCase(name)) {
 				return col;
 			}
 		}
-		throw new Exception();
+		printToTerminal("%s");
+		throw new NullPointerException(String.format("%sCould not find colour named \"%s\".", Util.ERR, name));
 	}
 
 	/* ---------------------------------------------------------------------- Dark Mode ---------------------------------------------------------------------- */
 
-	/** Returns whether the player is in a bright biome for darkmode. */
-	static void updateIsInBrightBiome(Player p) {
-		PlayerCfg.playerMap.get(p.getUniqueId()).isInBrightBiome
-				= brightBiomes.contains(p.getLocation().getBlock().getBiome());
-	}
-
 	/**
-	 * Get a list of all bright biomes currently recognized. Not the same as
-	 * all bright biomes on the config file as some may not be recognized by
-	 * older/newer minecraft versions.
+	 * Get a newly created list of all bright biomes currently recognized. Not the
+	 * same as all bright biomes on the config file as some may not be recognized
+	 * by older/newer minecraft versions.
 	 */
 	static List<String> getBrightBiomesList() {
 		return brightBiomes.stream()
@@ -388,93 +230,23 @@ public class Util {
 		return biomeUpdateDelay;
 	}
 
-	/**
-	 * Change how many ticks between each action bar message update.
-	 * Values higher than 20 may lead to actionbar text fading before it is updated.
-	 * Stops current updater task and schedules a new one with updated value.
-	 * @return Small message indicating updated state.
-	 */
-	static boolean setMessageUpdateDelay(CommandSender sender, String[] args, int argStart) {
-		//No number given
-		if (args.length < argStart + 1) {
-			sendMsg(sender, "Message update delay is currently: "
-					+ Util.HLT + Util.getMessageUpdateDelay() + " ticks.");
-		}
-		//Number was given
-		else {
-			try {
-				long newDelay = Long.parseLong(args[argStart]);
-
-				if (newDelay <= 0 || newDelay > 40) {
-					sendMsg(sender, ERR + "Number must be between 1 and 40 ticks.");
-					return true;
-				}
-				messageUpdateDelay = newDelay;
-
-				//Save the new value.
-				InfoHUD.getPlugin().getConfig().set(MESSAGE_UPDATE_DELAY_PATH, messageUpdateDelay);
-				InfoHUD.getPlugin().saveConfig();
-
-				//Stop plugin and restart with new refresh period.
-				InfoHUD.getPlugin().msgSenderTask.cancel();
-				InfoHUD.getPlugin().msgSenderTask = InfoHUD.getPlugin().startMessageUpdaterTask(getMessageUpdateDelay());
-
-				sendMsg(sender, "Message update delay set to " + HLT + newDelay + RES + ".");
-
-				return true;
-			} catch (NumberFormatException e) {
-				sendMsg(sender, Util.ERR + "Must be a positive integer between 1 and 40.");
-			}
-		}
-		return true;
-	}
-
-	/** Reloads content of config.yml. */
-	static boolean reload(CommandSender sender) {
-		boolean success;
-		try {
-			//Cancel task, reload config, and restart task.
-			InfoHUD.getPlugin().msgSenderTask.cancel();
-			success = loadConfig();
-			InfoHUD.getPlugin().msgSenderTask = InfoHUD.getPlugin().startMessageUpdaterTask(getMessageUpdateDelay());
-
-			if (success) {
-				sendMsg(sender, Util.GRN + "Reloaded successfully.");
-			}
-			else {
-				sendMsg(sender, Util.ERR + "Reload failed.");
-			}
-
-			return true;
-		}
-		catch (Exception e) {
-			return false;
-		}
-	}
-
 	/** Shortcut to print to server console. */
-	static void printToTerminal(String msg) {
+	public static void printToTerminal(String msg) {
 		Bukkit.getConsoleSender().sendMessage(SIGNATURE + msg);
 	}
 
 	/** Shortcut to printf to server console. */
-	static void printToTerminal(String msg, Object ... args) {
-		printToTerminal(String.format(msg, args));
-	}
-
-	/**
-	 * Gets how much time the last update took.
-	 * @return Small message indicating status.
-	 */
-	static boolean getBenchmark(CommandSender sender) {
-		sendMsg(sender, "InfoHUD took " + Util.HLT + String.format("%.3f", Util.benchmark / (1000000D)) + Util.RES
-				+ " ms (" + Util.HLT + String.format("%.2f", (Util.benchmark / (10000D)) / 50D)
-				+ Util.RES + "% tick) during the last tick.");
-		return true;
+	static void printToTerminal(String format, Object... args) {
+		printToTerminal(String.format(format, args));
 	}
 
 	/** Send chat message to command sender. */
-	static void sendMsg(CommandSender sender, String msg) {
+	public static void sendMsg(CommandSender sender, String msg) {
 		sender.sendMessage(SIGN + "[InfoHUD] " + RES + msg);
 	}
+
+	public static void sendMsg(CommandSender sender, String format, Object... args) {
+		sendMsg(sender, String.format(format, args));
+	}
+
 }

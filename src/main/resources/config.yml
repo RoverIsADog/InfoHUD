@@ -1,10 +1,10 @@
-infohudVersion: '1.5'
+infohudVersion: ${project.version}
 messageUpdateDelay: 5
 biomeUpdateDelay: 40
 colors:
   bright1: GOLD
   bright2: WHITE
-  dark1: DARK_BLUE
+  dark1: AQUA
   dark2: DARK_AQUA
 brightBiomes:
 - DESERT
@@ -34,7 +34,7 @@ brightBiomes:
 - ICE_PLAINS_SPIKE
 - ICE_SPIKES
 - FROZEN_RIVER
-- GROVE"
+- GROVE
 - SNOWY_SLOPES
 - JAGGED_PEAKS
 - FROZEN_PEAKS

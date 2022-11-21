@@ -1,4 +1,4 @@
-package com.roverisadog.infohud.command;
+package com.roverisadog.infohud.config;
 
 import org.bukkit.entity.Player;
 
@@ -30,35 +30,61 @@ public enum TimeMode {
 		this.description = description;
 	}
 
-	public static TimeMode get(int id) {
+	/**
+	 * Get the time mode enum value corresponding to a numerical ID.
+	 * 0: Disabled, 1: Current tick, 2: Clock24, 3: Villager schedule, 4: clock12.
+	 * Only to be used to parse older versions of config.yml.
+	 * @param id Numerical ID for the time mode.
+	 * @return Enum value.
+	 * @throws NullPointerException If unknown ID.
+	 */
+	@Deprecated
+	public static TimeMode get(int id) throws NullPointerException {
 		for (TimeMode tm : TimeMode.values()) {
 			if (tm.id == id) {
 				return tm;
 			}
 		}
-		return null;
-	}
-
-	public static TimeMode get(String id) {
-		for (TimeMode tm : TimeMode.values()) {
-			if (tm.name.equalsIgnoreCase(id)) {
-				return tm;
-			}
-		}
-		return null;
+		throw new NullPointerException();
 	}
 
 	/**
+	 * Gets the coordinates mode enum value from a name.
+	 * @param name Name of the coordinate mode.
+	 * @return Enum value.
+	 * @throws NullPointerException If unknown name.
+	 */
+	public static TimeMode get(String name) throws NullPointerException {
+		for (TimeMode tm : TimeMode.values()) {
+			if (tm.name.equalsIgnoreCase(name)) {
+				return tm;
+			}
+		}
+		throw new NullPointerException();
+	}
+
+	/**
+	 * Gets the string representation of the time mode.
+	 * @return Name.
+	 */
+	@Override
+	public String toString() {
+		return name;
+	}
+
+	/**
+	 * Get the local time of the player, in ticks. "17843"
 	 * @param player Player to check.
-	 * @return Local time of the player, in ticks.
+	 * @return String of the local time of the player.
 	 */
 	public static String getTimeTicks(Player player) {
 		return String.valueOf(player.getWorld().getTime());
 	}
 
 	/**
+	 * Get the local time of the player, format HH:mm. "23:32".
 	 * @param player Player to check.
-	 * @return Local time of the player, in HH:mm
+	 * @return String of the local time of the player.
 	 * @see <a href="https://minecraft.gamepedia.com/Daylight_cycle">Daylight Cycle</a>
 	 */
 	public static String getTime24(Player player) {
@@ -70,8 +96,9 @@ public enum TimeMode {
 	}
 
 	/**
+	 * Get the local time of the player, format hh:mm HH. "11:32 PM".
 	 * @param player Player to check.
-	 * @return Local time of the player, in hh:mm HH
+	 * @return String of the local time of the player.
 	 * @see <a href="https://minecraft.gamepedia.com/Daylight_cycle">Daylight Cycle</a>
 	 */
 	public static String getTime12(Player player, String col1, String col2) {
@@ -89,11 +116,13 @@ public enum TimeMode {
 	}
 
 	/**
-	 * Returns the current villager behavior pattern and the time remaining until
-	 * the next scheduled behavior, using local player time.
+	 * Get a string of the current villager schedule phase and the time remaining until the
+	 * next scheduled phase, using local player time. Remaining time are in real world time.
+	 * "PHASE MM:SS"
 	 * @param player Player to check.
 	 * @param col1 Main display color.
 	 * @param col2 Secondary display color.
+	 * @return String of the current villager schedule.
 	 * @see <a href="https://minecraft.gamepedia.com/Villager#Schedules">Villager schedule</a>
 	 */
 	public static String getVillagerTime(Player player, String col1, String col2) {
@@ -125,8 +154,4 @@ public enum TimeMode {
 		}
 	}
 
-	@Override
-	public String toString() {
-		return name;
-	}
 }

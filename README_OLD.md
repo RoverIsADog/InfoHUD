@@ -59,5 +59,5 @@ playerConfig:
     coordinatesMode: 1
     timeMode: 2
     darkMode: 2
-  ...
+...
 ```

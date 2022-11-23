@@ -7,18 +7,31 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.io.File;
+import java.io.IOException;
+
 public class InfoHUD extends JavaPlugin {
 
+	/** CraftBukkit, Spigot, Paper, ... */
+	public static String serverVendor;
+	/** Minecraft release 1.XX. */
+	public static int apiVersion;
 	private static InfoHUD instance;
 
 	public InfoHUD() {
 		instance = this;
 	}
 
+	/**
+	 * Get the current InfoHUD singleton instance. Not to be used before
+	 * {@link #onEnable()} is called .
+	 * @return Instance of the plugin.
+	 */
 	public static InfoHUD getPlugin() {
 		return instance;
 	}
@@ -27,17 +40,13 @@ public class InfoHUD extends JavaPlugin {
 
 	//Version for reflection
 	private String versionStr;
-	private ActionBarSender actionBarSender;
+	public static ActionBarSender actionBarSender;
 
 	// Tasks
 	protected BukkitTask msgSenderTask;
 	protected BukkitTask biomeUpdateTask;
 
-	private PlayerConfig playerConfig;
-
-	public PlayerConfig getPlayerConfig() {
-		return playerConfig;
-	}
+	private ConfigManager configManager;
 
 	/**
 	 * Initial setup:
@@ -51,16 +60,16 @@ public class InfoHUD extends JavaPlugin {
 			this.saveDefaultConfig(); // Does nothing if config.yml already exists.
 
 			//Save initial cfg or load.
-			this.playerConfig = new PlayerConfig(this);
-			if (!playerConfig.loadConfig()) {
+			this.configManager = new ConfigManager(this);
+			if (!configManager.loadConfig()) {
 				throw new Exception(Util.ERR + "Error while reading config.yml.");
 			}
 
 			//Version check eg: org.bukkit.craftbukkit.v1_16_R2.blabla
 			String ver = Bukkit.getServer().getClass().getPackage().getName();
 			versionStr = ver.split("\\.")[3]; //v1_16_R2
-			Util.apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
-			Util.serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
+			apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
+			serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
 
 //			Util.printToTerminal("versionStr: %s, apiVersion: %s, serverVendor: %s"
 //					, versionStr, Util.apiVersion, Util.serverVendor);
@@ -71,11 +80,11 @@ public class InfoHUD extends JavaPlugin {
 			}
 
 			// Setup command executor
-			this.getCommand(Util.CMD_NAME).setExecutor(new CommandExecutor(this));
+			this.getCommand(CommandExecutor.CMD_NAME).setExecutor(new CommandExecutor(this));
 
 			//Start sender and biome updater tasks
-			msgSenderTask = startMessageUpdaterTask(Util.getMessageUpdateDelay());
-			biomeUpdateTask = getBiomeUpdaterTask(Util.getBiomeUpdateDelay());
+			msgSenderTask = startMessageUpdaterTask(MessageUpdaterTask.getMessageUpdateDelay());
+			biomeUpdateTask = startBiomeUpdaterTask(BrightBiomes.getBiomeUpdateDelay());
 
 			// Register action bar listener
 			ActionBarListener abl = new ActionBarListener(actionBarSender);
@@ -84,10 +93,11 @@ public class InfoHUD extends JavaPlugin {
 
 			Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on "
 					+ Util.WHI + (isSpigot ? "Spigot API" : "NMS")
-					+ " v1." + Util.apiVersion);
+					+ " v1." + apiVersion);
 		}
 		catch (Exception e) {
 			Util.printToTerminal(e.getMessage());
+			e.printStackTrace();
 			Util.printToTerminal("Shutting down...");
 			Bukkit.getPluginManager().disablePlugin(this);
 		}
@@ -108,125 +118,21 @@ public class InfoHUD extends JavaPlugin {
 	 * @return BukkitTask created.
 	 */
 	public BukkitTask startMessageUpdaterTask(long messageUpdateDelay) {
-		return Bukkit.getScheduler().runTaskTimer(instance, () -> {
-			long benchmarkStart = System.nanoTime();
-			for (Player p : instance.getServer().getOnlinePlayers()) {
-
-				//Skip players that are not on the list
-				if (!playerConfig.isEnabled(p)) {
-					continue;
-				}
-
-				//Assumes that online players << saved players
-
-				PlayerCfg cfg = playerConfig.getConfig(p);
-
-				if (cfg.getCoordMode() == CoordMode.DISABLED && cfg.getTimeMode() == TimeMode.DISABLED) {
-					playerConfig.removePlayer(p);
-					continue;
-				}
-
-				//Setting dark mode colors -> Assume disabled : 0
-				String color1; //Text
-				String color2; //Values
-
-				if (cfg.getDarkMode() == DarkMode.AUTO) {
-					if (cfg.isInBrightBiome()) {
-						color1 = Util.dark1;
-						color2 = Util.dark2;
-					}
-					else {
-						color1 = Util.bright1;
-						color2 = Util.bright2;
-					}
-				}
-				else if (cfg.getDarkMode() == DarkMode.DISABLED) {
-					color1 = Util.bright1;
-					color2 = Util.bright2;
-				}
-				else { //DarkMode.ENABLED
-					color1 = Util.dark1;
-					color2 = Util.dark2;
-				}
-
-				//Coordinates enabled
-				if (cfg.getCoordMode() == CoordMode.ENABLED) {
-					switch (cfg.getTimeMode()) {
-						case DISABLED:
-							sendToActionBar(p, color1 + "XYZ: "
-									+ color2 + CoordMode.getCoordinates(p) + " "
-									+ color1 + Util.getPlayerDirection(p));
-							break;
-						case CURRENT_TICK:
-							sendToActionBar(p, color1 + "XYZ: "
-									+ color2 + CoordMode.getCoordinates(p) + " "
-									+ color1 + String.format("%-10s", Util.getPlayerDirection(p))
-									+ color2 + TimeMode.getTimeTicks(p));
-							break;
-						case CLOCK24:
-							sendToActionBar(p, color1 + "XYZ: "
-									+ color2 + CoordMode.getCoordinates(p) + " "
-									+ color1 + String.format("%-10s", Util.getPlayerDirection(p))
-									+ color2 + TimeMode.getTime24(p));
-							break;
-						case CLOCK12:
-							sendToActionBar(p, color1 + "XYZ: "
-									+ color2 + CoordMode.getCoordinates(p) + " "
-									+ color1 + String.format("%-10s", Util.getPlayerDirection(p))
-									+ color2 + TimeMode.getTime12(p, color1, color2));
-							break;
-						case VILLAGER_SCHEDULE:
-							sendToActionBar(p, color1 + "XYZ: "
-									+ color2 + CoordMode.getCoordinates(p) + " "
-									+ color1 + String.format("%-10s", Util.getPlayerDirection(p))
-									+ color2 + TimeMode.getVillagerTime(p, color1, color2));
-							break;
-						default: //Ignored
-					}
-				}
-
-				//Coordinates disabled
-				else if (cfg.getCoordMode() == CoordMode.DISABLED) {
-					switch (cfg.getTimeMode()) {
-						case CURRENT_TICK:
-							sendToActionBar(p, color2 + TimeMode.getTimeTicks(p));
-							break;
-						case CLOCK12:
-							sendToActionBar(p, color2 + TimeMode.getTime12(p, color1, color2));
-							break;
-						case CLOCK24:
-							sendToActionBar(p, color2 + TimeMode.getTime24(p));
-							break;
-						case VILLAGER_SCHEDULE:
-							sendToActionBar(p, color2 + TimeMode.getVillagerTime(p, color1, color2));
-							break;
-						default: //Ignored
-					}
-				}
-			}
-			Util.benchmark = System.nanoTime() - benchmarkStart;
-		}, 0L, messageUpdateDelay);
+		MessageUpdaterTask mut = new MessageUpdaterTask(this);
+		return Bukkit.getScheduler().runTaskTimer(this, mut, 0L, messageUpdateDelay);
 	}
 
 	/**
-	 * Gets the synchronous task responsible for fetching biomes. Relatively very expensive.
-	 * Not asynchronous as it accesses non thread-safe methods from the bukkit API.
-	 * @param biomeUpdateDelay Ticks between each player biomes updates, preferably larger.
+	 * Starts and get a reference to the synchronous task responsible for fetching biomes.
+	 * Relatively very expensive. Not asynchronous as it accesses non thread-safe methods
+	 * from the bukkit API.
+	 * @param biomeUpdateDelay Ticks between each players' biomes updates, preferably larger.
 	 *                         config.yml: biomeUpdateDelay
+	 * @return Reference to the task (so that it can be stopped, etc.)
 	 */
-	private BukkitTask getBiomeUpdaterTask(long biomeUpdateDelay) {
-		return Bukkit.getScheduler().runTaskTimer(instance, () -> {
-
-			//getOnlinePlayers() not thread safe
-			for (Player p : getServer().getOnlinePlayers()) {
-				if (playerConfig.isEnabled(p)) {
-					if (playerConfig.getConfig(p).getDarkMode() == DarkMode.AUTO) {
-						playerConfig.updateIsInBrightBiome(p);
-					}
-				}
-			}
-
-		}, 0L, biomeUpdateDelay);
+	private BukkitTask startBiomeUpdaterTask(long biomeUpdateDelay) {
+		Runnable but = new BrightBiomes.BrightBiomesUpdaterTask(this);
+		return Bukkit.getScheduler().runTaskTimer(this, but, 0L, biomeUpdateDelay);
 	}
 
 	/**
@@ -262,16 +168,16 @@ public class InfoHUD extends JavaPlugin {
 					"falling back to NMS");
 			try {
 				// 1.8 - 1.11
-				if (Util.apiVersion < 12)
+				if (apiVersion < 12)
 					actionBarSender = new ActionBarSenderNMS1_8(versionStr);
 				// 1.11 - 1.15
-				else if (Util.apiVersion < 16)
+				else if (apiVersion < 16)
 					actionBarSender = new ActionBarSenderNMS1_12(versionStr);
 				// 1.16
-				else if (Util.apiVersion < 17)
+				else if (apiVersion < 17)
 					actionBarSender = new ActionBarSenderNMS1_16(versionStr);
 				// 1.17
-				else if (Util.apiVersion < 18)
+				else if (apiVersion < 18)
 					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
 				else // FIXME update NMS
 					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
@@ -283,7 +189,6 @@ public class InfoHUD extends JavaPlugin {
 				return false;
 			}
 		}
-
 		return true;
 	}
 
@@ -297,9 +202,9 @@ public class InfoHUD extends JavaPlugin {
 			// Cancel tasks, reload config, and restart tasks.
 			msgSenderTask.cancel();
 			biomeUpdateTask.cancel();
-			success = playerConfig.loadConfig();
-			msgSenderTask = startMessageUpdaterTask(Util.getMessageUpdateDelay());
-			biomeUpdateTask = getBiomeUpdaterTask(Util.getBiomeUpdateDelay());
+			success = configManager.loadConfig();
+			msgSenderTask = startMessageUpdaterTask(MessageUpdaterTask.getMessageUpdateDelay());
+			biomeUpdateTask = startBiomeUpdaterTask(BrightBiomes.getBiomeUpdateDelay());
 
 			if (success) {
 				Util.sendMsg(sender, Util.GRN + "Reloaded successfully.");
@@ -314,19 +219,7 @@ public class InfoHUD extends JavaPlugin {
 		}
 	}
 
-	/**
-	 * Sends a message to a player's actionbar using {@link ActionBarSender}
-	 * @param p Recipient player.
-	 * @param msg Message to send (as is).
-	 */
-	private void sendToActionBar(Player p, String msg) {
-		try {
-			actionBarSender.sendToActionBar(p, msg);
-		} catch (Exception e) {
-			Util.printToTerminal("Fatal error while sending packets. Shutting down...");
-			Bukkit.getPluginManager().disablePlugin(instance);
-			e.printStackTrace();
-		}
+	public ConfigManager getConfigManager() {
+		return configManager;
 	}
-
 }

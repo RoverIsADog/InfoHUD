@@ -1,16 +1,17 @@
-infohudVersion: ${project.version}
+infohudVersion: '${project.version}'
 messageUpdateDelay: 5
 biomeUpdateDelay: 40
 colors:
   bright1: GOLD
   bright2: WHITE
-  dark1: AQUA
-  dark2: DARK_AQUA
+  dark1: DARK_AQUA
+  dark2: AQUA
 brightBiomes:
 - DESERT
 - DESERT_HILLS
 - ICE_DESERT
 - BEACH
+- BEACHES
 - SNOWY_BEACH
 - COLD_BEACH
 - SNOWY_TUNDRA
@@ -42,4 +43,3 @@ brightBiomes:
 - WINDSWEPT_HILLS
 - WINDSWEPT_GRAVELLY_HILLS
 - SNOWY_PLAINS
-playerConfig: {}

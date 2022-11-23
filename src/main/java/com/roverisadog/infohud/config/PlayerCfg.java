@@ -19,8 +19,7 @@ public class PlayerCfg {
 	/** (Persistent) Dark mode settings. */
 	private DarkMode darkMode;
 
-	/**
-	 * (Cache) Tracks whether the player is currently in a "bright biome" to avoid
+	/** (Cache) Tracks whether the player is currently in a "bright biome" to avoid
 	 * expensively checking every tick. See biomeUpdateDelay in config.yml */
 	private boolean isInBrightBiome;
 

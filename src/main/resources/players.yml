@@ -1,0 +1,2 @@
+infohudVersion: '${project.version}'
+playerConfig: {}

@@ -6,7 +6,7 @@ prefix: ${project.artifactId}
 author: RoverIsADog
 website: https://github.com/RoverIsADog/InfoHUD
 
-# 1.13 to avoid spigot loading it in legacy mode.
+# 1.13 to avoid spigot loading the plugin in legacy mode.
 api-version: 1.13
 # Otherwise NullPointerException
 load: POSTWORLD

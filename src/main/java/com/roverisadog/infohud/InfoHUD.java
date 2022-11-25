@@ -1,19 +1,15 @@
 
 package com.roverisadog.infohud;
 
-import com.roverisadog.infohud.config.*;
+import com.roverisadog.infohud.config.ConfigManager;
+import com.roverisadog.infohud.config.PlayerCfg;
 import com.roverisadog.infohud.message.*;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.io.File;
-import java.io.IOException;
 
 public class InfoHUD extends JavaPlugin {
 
@@ -167,20 +163,18 @@ public class InfoHUD extends JavaPlugin {
 			Util.printToTerminal(Util.GRN + "Spigot API unavailable or incompatible:" +
 					"falling back to NMS");
 			try {
-				// 1.8 - 1.11
-				if (apiVersion < 12)
+				if (apiVersion < 12) // 1.8 - 1.11
 					actionBarSender = new ActionBarSenderNMS1_8(versionStr);
-				// 1.11 - 1.15
-				else if (apiVersion < 16)
+				else if (apiVersion < 16) // 1.12 - 1.15
 					actionBarSender = new ActionBarSenderNMS1_12(versionStr);
-				// 1.16
-				else if (apiVersion < 17)
+				else if (apiVersion < 17) // 1.16
 					actionBarSender = new ActionBarSenderNMS1_16(versionStr);
-				// 1.17
-				else if (apiVersion < 18)
+				else if (apiVersion < 18) // 1.17
 					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
-				else // FIXME update NMS
-					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
+				else if (apiVersion < 19) // 1.18
+					actionBarSender = new ActionBarSenderNMS1_18(versionStr);
+				else // 1.19+
+					actionBarSender = new ActionBarSenderNMS1_19(versionStr);
 
 			} catch (Exception | Error e) { // Reflection error
 				Util.printToTerminal(Util.ERR + "Exception while initializing packets with" +

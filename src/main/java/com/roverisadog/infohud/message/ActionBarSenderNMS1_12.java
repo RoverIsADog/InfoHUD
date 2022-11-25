@@ -11,13 +11,13 @@ import java.lang.reflect.Method;
  */
 public class ActionBarSenderNMS1_12 implements ActionBarSender {
 
-	private static Class<?> craftPlayerClass;
-	private static Method getHandleMethod;
-	private static Field playerConnectionField;
-	private static Method sendPacketMethod;
-	private static Constructor<?> packetPlayOutChatConstructor;
-	private static Constructor<?> chatMessageConstructor;
-	private static Object charMessageTypeEnum;
+	private final Class<?> craftPlayerClass;
+	private final Method getHandleMethod;
+	private final Field playerConnectionField;
+	private final Method sendPacketMethod;
+	private final Constructor<?> packetPlayOutChatConstructor;
+	private final Constructor<?> chatMessageConstructor;
+	private final Object charMessageTypeEnum;
 
 	/**
 	 * Initialize NMS if applicable.

@@ -53,12 +53,15 @@ public class ConfigManager {
 	}
 
 	/**
-	 * Checks whether a player has InfoHUD enabled.
+	 * Updates the player's config (e.g. update the pause timer) and then checks whether the player
+	 * has InfoHUD enabled for this tick.
 	 * @param player The player.
-	 * @return True if enabled.
+	 * @return True if enabled for this tick.
 	 */
-	public boolean isEnabled(Player player) {
-		return playerMap.containsKey(player.getUniqueId());
+	public boolean updateAndGetEnabled(Player player) {
+		PlayerCfg cfg = playerMap.get(player.getUniqueId());
+		if (cfg == null) return false;
+		return cfg.updatePaused();
 	}
 
 	/**
@@ -86,7 +89,7 @@ public class ConfigManager {
 	 * or failure of the operation and writes changes to file.
 	 */
 	public synchronized void addPlayer(Player player) {
-		if (isEnabled(player)) {
+		if (updateAndGetEnabled(player)) {
 			Util.sendMsg(player, Util.HLT + "InfoHUD was already enabled.");
 			return;
 		}
@@ -99,7 +102,7 @@ public class ConfigManager {
 		playersConfig.set(playerPath, getCfg(player).toRawMap());
 		savePlayersConfig();
 
-		Util.sendMsg(player, "InfoHUD is now " + (isEnabled(player)
+		Util.sendMsg(player, "InfoHUD is now " + (updateAndGetEnabled(player)
 				? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
 	}
 
@@ -109,7 +112,7 @@ public class ConfigManager {
 	 * @param player Player to remove
 	 */
 	public synchronized void removePlayer(Player player) {
-		if (!isEnabled(player)) {
+		if (!updateAndGetEnabled(player)) {
 			Util.sendMsg(player, Util.HLT + "InfoHUD was already disabled.");
 			return;
 		}
@@ -121,7 +124,7 @@ public class ConfigManager {
 		playersConfig.set(playerPath, null); // null => remove
 		savePlayersConfig();
 
-		Util.sendMsg(player, "InfoHUD is now " + (isEnabled(player)
+		Util.sendMsg(player, "InfoHUD is now " + (updateAndGetEnabled(player)
 				? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
 	}
 
@@ -143,7 +146,7 @@ public class ConfigManager {
 	 * @return True if successful.
 	 */
 	public synchronized boolean setCoordinatesMode(Player p, CoordMode newMode) {
-		if (!isEnabled(p)) return false;
+		if (!updateAndGetEnabled(p)) return false;
 		playerMap.get(p.getUniqueId()).setCoordMode(newMode);
 
 		// Writes changes into config.yml
@@ -207,6 +210,27 @@ public class ConfigManager {
 		return true;
 	}
 
+	/* ---------------------------------- Pause Settings ---------------------------------- */
+
+	/**
+	 * Pauses message display for a given player.
+	 * @param p The player.
+	 * @param time Ticks to stop for.
+	 */
+	public void pauseFor(Player p, int time) {
+		playerMap.get(p.getUniqueId()).pauseFor(time);
+	}
+
+	/**
+	 * Pauses message display for all players in the config.
+	 * @param time Ticks to stop for.
+	 */
+	public synchronized void pauseFor(int time) {
+		playerMap.forEach((uuid, playerCfg) -> playerCfg.pauseFor(time));
+	}
+
+
+
 	/* -------------------------------- File management -------------------------------- */
 
 	/**
@@ -266,7 +290,7 @@ public class ConfigManager {
 		}
 
 		// Load every players' settings [players.yml/"playerCfg"]
-		List<UUID> allPlayers = this.playersConfig.getConfigurationSection(PLAYER_CFG_PATH)
+		List<UUID> allPlayers = playersConfig.getConfigurationSection(PLAYER_CFG_PATH)
 				.getKeys(false).stream()
 				.map(UUID::fromString)
 				.collect(Collectors.toList());
@@ -274,7 +298,7 @@ public class ConfigManager {
 
 			//Get raw mapping of the player's settings
 			Map<String, Object> rawSettings =
-					this.playersConfig.getConfigurationSection(PLAYER_CFG_PATH + "." + playerUUID.toString())
+					playersConfig.getConfigurationSection(PLAYER_CFG_PATH + "." + playerUUID.toString())
 					.getValues(false);
 
 			// Decode into a PlayerCfg object and put into the player map.
@@ -293,7 +317,7 @@ public class ConfigManager {
 		// Create file if DNE
 		playerConfigFile = new File(pluginInstance.getDataFolder(), PLAYER_CFG_FILENAME);
 		if (!playerConfigFile.exists()) {
-			playerConfigFile.getParentFile().mkdirs();
+			boolean ignored = playerConfigFile.getParentFile().mkdirs();
 			pluginInstance.saveResource(PLAYER_CFG_FILENAME, false);
 		}
 		playersConfig = YamlConfiguration.loadConfiguration(playerConfigFile);
@@ -436,7 +460,7 @@ public class ConfigManager {
 		// Rewrite player configs
 		playersConfig.set(VERSION_PATH, pluginInstance.getDescription().getVersion());
 		for (PlayerCfg playerCfg : playerCfgs) { //playerConfig:
-			playersConfig.createSection(PLAYER_CFG_PATH + "." + playerCfg.id, playerCfg.toRawMap());
+			playersConfig.createSection(PLAYER_CFG_PATH + "." + playerCfg.getId(), playerCfg.toRawMap());
 		}
 
 		pluginInstance.saveConfig();

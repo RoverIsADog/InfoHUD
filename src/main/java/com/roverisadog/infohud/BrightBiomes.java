@@ -98,7 +98,7 @@ public class BrightBiomes  {
 		public void run() {
 			//getOnlinePlayers() is not thread safe. Can't be accessed asynchronously :(
 			for (Player p : pluginInstance.getServer().getOnlinePlayers()) {
-				if (configManager.isEnabled(p)) {
+				if (configManager.updateAndGetEnabled(p)) {
 					PlayerCfg cfg = configManager.getCfg(p);
 					if (cfg.getDarkMode() == DarkMode.AUTO) {
 						cfg.setInBrightBiome(brightBiomes.contains(p.getLocation().getBlock().getBiome()));

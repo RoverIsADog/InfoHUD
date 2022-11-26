@@ -39,11 +39,12 @@ public class MessageUpdaterTask implements Runnable {
 
 	@Override
 	public void run() {
+
 		long benchmarkStart = System.nanoTime();
 		for (Player p : pluginInstance.getServer().getOnlinePlayers()) {
 
 			//Skip players that are not on the list
-			if (!configManager.isEnabled(p)) {
+			if (!configManager.updateAndGetEnabled(p)) {
 				continue;
 			}
 

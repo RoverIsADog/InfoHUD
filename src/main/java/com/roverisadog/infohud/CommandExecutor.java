@@ -134,7 +134,7 @@ public class CommandExecutor implements TabExecutor {
 				}
 				// Further commands require InfoHUD to be enabled before.
 				else {
-					if (!pluginInstance.getConfigManager().isEnabled(p)) {
+					if (!pluginInstance.getConfigManager().updateAndGetEnabled(p)) {
 						Util.sendMsg(p, "Enable InfoHUD first: " + Util.HLT + "/" + label + " enable");
 					}
 					// [/infohud coordinates]
@@ -558,12 +558,12 @@ public class CommandExecutor implements TabExecutor {
 		// Display current player's settings.
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
-			msg.add((pluginInstance.getConfigManager().isEnabled(p) ? Util.GRN + "Enabled" : Util.ERR + "Disabled")
+			msg.add((pluginInstance.getConfigManager().updateAndGetEnabled(p) ? Util.GRN + "Enabled" : Util.ERR + "Disabled")
 					+ Util.RES + " for " + p.getDisplayName()
 					+ (p.hasPermission(Util.PERM_ADMIN) || p.isOp()
 					? Util.GRN + " (InfoHUD Admin)" : ""));
 
-			if (pluginInstance.getConfigManager().isEnabled(p)) {
+			if (pluginInstance.getConfigManager().updateAndGetEnabled(p)) {
 				PlayerCfg cfg = pluginInstance.getConfigManager().getCfg(p);
 				msg.add(Util.HLT + "   coordinates: " + Util.RES + cfg.getCoordMode().description);
 				msg.add(Util.HLT + "   time: " + Util.RES + cfg.getTimeMode().description);

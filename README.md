@@ -12,13 +12,13 @@ Version 1.5, compatible with Craftbukkit/Spigot/Paper 1.8+. Compiled using Spigo
 Drag `InfoHUD-1.XX.jar` in the `serverDirectory/plugins` folder. The plugin should work for all versions 1.8+.
 
 ## Features
-Display your current coordinates.
+Display the current coordinates and time.
 <p align="center"><img src="/img/banner.png"></p>
-Display the current time in different formats.
+Display the time in different formats (villager schedule shown).
 <p align="center"><img src="/img/villagerTime.png"></p>
-Automatically switch to dark mode in brighter biomes such as deserts and snow biomes.
+Automatically switch to 'dark mode' in brighter biomes such as deserts and snow biomes.
 <p align="center"><img src="/img/darkMode.png"></p>
-Nearly every settings can be adjusted (See config.yml).
+Nearly every setting can be adjusted (See config.yml).
 
 ## Commands
 **For players (infohud.use):**\
@@ -38,7 +38,7 @@ Nearly every settings can be adjusted (See config.yml).
 `infohud.admin` Allows player to change plugin settings.
 
 ## config.yml
-For versions 1.2 and lower, see [here](./README_OLD.md).
+For versions 1.2 and lower, see [here](./README_OLD.md). As of version 1.5, player configuration have been moved to `players.yml`.
 ```yaml
 infohudVersion: '1.X'
 # Ticks between each update. Performance cost is tiny, so you are unlikely to run into any
@@ -55,7 +55,7 @@ colors:
   dark2: AQUA
 # Biomes where dark mode will turn on automatically.
 # Find by using https://minecraft.gamepedia.com/Biome#Biome_IDs, the F3 menu or use /infohud biome add
-# Must be in UPPERCASE. Eg. DEEP_FROZEN_OCEAN
+# Must be in UPPERCASE. E.g. DEEP_FROZEN_OCEAN
 # Only biomes in this list that are recognised by the current MC version will be loaded. Biomes from older/newer versions
 # will not be loaded, but remain in the file.
 brightBiomes:

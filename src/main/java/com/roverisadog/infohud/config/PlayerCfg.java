@@ -10,7 +10,7 @@ import java.util.UUID;
 public class PlayerCfg {
 
 	/** UUID of the player. */
-	protected UUID id;
+	private final UUID id;
 
 	/** (Persistent) How coordinates should be displayed (enum in case more modes added.) */
 	private CoordMode coordMode;
@@ -21,7 +21,11 @@ public class PlayerCfg {
 
 	/** (Cache) Tracks whether the player is currently in a "bright biome" to avoid
 	 * expensively checking every tick. See biomeUpdateDelay in config.yml */
-	private boolean isInBrightBiome;
+	private boolean isInBrightBiome = false;
+
+	/** (Cache) Tracks whether the plugin should be paused for this player (> 0) and for how
+	 * long. */
+	private int pausedFor = 0;
 
 	/**
 	 * Constructor that creates default configs for a player:
@@ -41,6 +45,10 @@ public class PlayerCfg {
 		this.coordMode = coordMode;
 		this.timeMode = timeMode;
 		this.darkMode = darkMode;
+	}
+
+	public UUID getId() {
+		return id;
 	}
 
 	public CoordMode getCoordMode() {
@@ -75,7 +83,19 @@ public class PlayerCfg {
 		isInBrightBiome = inBrightBiome;
 	}
 
+	public synchronized void pauseFor(int time) {
+		if (time < pausedFor) return;
+		pausedFor = time;
+	}
 
+	/**
+	 * Checks whether InfoHUD should be paused for the given player.
+	 * @return True if not paused.
+	 */
+	protected synchronized boolean updatePaused() {
+		if (pausedFor > 0) pausedFor--;
+		return pausedFor == 0;
+	}
 
 	/**
 	 * Used to convert a player's configuration from InfoHUD internal representation into

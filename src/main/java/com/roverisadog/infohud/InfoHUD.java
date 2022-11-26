@@ -66,6 +66,7 @@ public class InfoHUD extends JavaPlugin {
 			versionStr = ver.split("\\.")[3]; //v1_16_R2
 			apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
 			serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
+			isSpigot = isSpigot();
 
 //			Util.printToTerminal("versionStr: %s, apiVersion: %s, serverVendor: %s"
 //					, versionStr, Util.apiVersion, Util.serverVendor);
@@ -83,9 +84,12 @@ public class InfoHUD extends JavaPlugin {
 			biomeUpdateTask = startBiomeUpdaterTask(BrightBiomes.getBiomeUpdateDelay());
 
 			// Register action bar listener
-			ActionBarListener abl = new ActionBarListener(actionBarSender);
-			Bukkit.getServer().getPluginManager().registerEvents(abl, this);
-
+			PauseListener plb = new PauseListener(this);
+			Bukkit.getServer().getPluginManager().registerEvents(plb, this);
+			if (isSpigot) {
+				PauseListenerExtra pls = new PauseListenerExtra(this);
+				Bukkit.getServer().getPluginManager().registerEvents(pls, this);
+			}
 
 			Util.printToTerminal(Util.GRN + "InfoHUD Successfully Enabled on "
 					+ Util.WHI + (isSpigot ? "Spigot API" : "NMS")
@@ -131,6 +135,21 @@ public class InfoHUD extends JavaPlugin {
 		return Bukkit.getScheduler().runTaskTimer(this, but, 0L, biomeUpdateDelay);
 	}
 
+	private boolean isSpigot() {
+		// Use spigot API when possible by checking Player$Spigot and method exists.
+		// (Actionbar DNE MC < 1.9, and API DNE craftbukkit / early 1.9 spigot builds)
+		try {
+//			Player.Spigot.class.getMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
+			Class.forName("org.bukkit.entity.Player$Spigot").getDeclaredMethod(
+					"sendMessage", ChatMessageType.class, BaseComponent.class); // Exists
+//			Util.printToTerminal("Classname: " + Player.Spigot.class);
+			return true;
+		} catch (Exception | Error ignored) {
+//			ignored.printStackTrace();
+			return false;
+		}
+	}
+
 	/**
 	 * Utility method to initialise the ActionBarSender, depending on server
 	 * version and vendor, can be spigot API wrapper (spigot/paper, preferred)
@@ -139,20 +158,6 @@ public class InfoHUD extends JavaPlugin {
 	 * @return Whether an {@link ActionBarSender} initialized correctly.
 	 */
 	private boolean initializeActionBarSender() {
-
-		// Use spigot API when possible by checking Player$Spigot and method exists.
-		// (Actionbar DNE MC < 1.9, and API DNE craftbukkit / early 1.9 spigot builds)
-		try {
-//			Player.Spigot.class.getMethod("sendMessage", ChatMessageType.class, BaseComponent.class);
-			Class.forName("org.bukkit.entity.Player$Spigot").getDeclaredMethod(
-					"sendMessage", ChatMessageType.class, BaseComponent.class); // Exists
-//			Util.printToTerminal("Classname: " + Player.Spigot.class);
-			isSpigot = true;
-		} catch (Exception | Error ignored) {
-//			ignored.printStackTrace();
-			isSpigot = false;
-		}
-
 		// Prefer using spigot api when possible
 		if (isSpigot) {
 			Util.printToTerminal(Util.GRN + "Using Spigot API");

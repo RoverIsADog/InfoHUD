@@ -92,9 +92,9 @@ public class PlayerCfg {
 	 * Checks whether InfoHUD should be paused for the given player.
 	 * @return True if not paused.
 	 */
-	protected synchronized boolean updatePaused() {
-		if (pausedFor > 0) pausedFor--;
-		return pausedFor == 0;
+	protected synchronized boolean updateAndCheckPaused(int ticks) {
+		if (pausedFor > 0) pausedFor -= ticks;
+		return pausedFor <= 0;
 	}
 
 	/**

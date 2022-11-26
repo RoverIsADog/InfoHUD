@@ -118,7 +118,7 @@ public class InfoHUD extends JavaPlugin {
 	 * @return BukkitTask created.
 	 */
 	public BukkitTask startMessageUpdaterTask(long messageUpdateDelay) {
-		MessageUpdaterTask mut = new MessageUpdaterTask(this);
+		MessageUpdaterTask mut = new MessageUpdaterTask(this, (int) messageUpdateDelay);
 		return Bukkit.getScheduler().runTaskTimer(this, mut, 0L, messageUpdateDelay);
 	}
 

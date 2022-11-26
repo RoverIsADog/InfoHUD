@@ -58,10 +58,14 @@ public class ConfigManager {
 	 * @param player The player.
 	 * @return True if enabled for this tick.
 	 */
-	public boolean updateAndGetEnabled(Player player) {
+	public boolean updateAndGetEnabled(Player player, int ticks) {
 		PlayerCfg cfg = playerMap.get(player.getUniqueId());
 		if (cfg == null) return false;
-		return cfg.updatePaused();
+		return cfg.updateAndCheckPaused(ticks);
+	}
+
+	public boolean isEnabled(Player player) {
+		return playerMap.containsKey(player.getUniqueId());
 	}
 
 	/**
@@ -89,7 +93,7 @@ public class ConfigManager {
 	 * or failure of the operation and writes changes to file.
 	 */
 	public synchronized void addPlayer(Player player) {
-		if (updateAndGetEnabled(player)) {
+		if (isEnabled(player)) {
 			Util.sendMsg(player, Util.HLT + "InfoHUD was already enabled.");
 			return;
 		}
@@ -102,7 +106,7 @@ public class ConfigManager {
 		playersConfig.set(playerPath, getCfg(player).toRawMap());
 		savePlayersConfig();
 
-		Util.sendMsg(player, "InfoHUD is now " + (updateAndGetEnabled(player)
+		Util.sendMsg(player, "InfoHUD is now " + (isEnabled(player)
 				? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
 	}
 
@@ -112,7 +116,7 @@ public class ConfigManager {
 	 * @param player Player to remove
 	 */
 	public synchronized void removePlayer(Player player) {
-		if (!updateAndGetEnabled(player)) {
+		if (!isEnabled(player)) {
 			Util.sendMsg(player, Util.HLT + "InfoHUD was already disabled.");
 			return;
 		}
@@ -124,7 +128,7 @@ public class ConfigManager {
 		playersConfig.set(playerPath, null); // null => remove
 		savePlayersConfig();
 
-		Util.sendMsg(player, "InfoHUD is now " + (updateAndGetEnabled(player)
+		Util.sendMsg(player, "InfoHUD is now " + (isEnabled(player)
 				? Util.GRN + "enabled" : Util.ERR + "disabled") + Util.RES + ".");
 	}
 
@@ -146,7 +150,7 @@ public class ConfigManager {
 	 * @return True if successful.
 	 */
 	public synchronized boolean setCoordinatesMode(Player p, CoordMode newMode) {
-		if (!updateAndGetEnabled(p)) return false;
+		if (!isEnabled(p)) return false;
 		playerMap.get(p.getUniqueId()).setCoordMode(newMode);
 
 		// Writes changes into config.yml

@@ -24,12 +24,15 @@ public class MessageUpdaterTask implements Runnable {
 	private final InfoHUD pluginInstance;
 	/** Object containing the configurations of all players. */
 	private final ConfigManager configManager;
+	/** {@link #messageUpdateDelay} for this task instance. */
+	private final int taskMessageUpdateDelay;
 	/** How long the last message updater task iteration took. */
 	public static long benchmark = 0;
 
-	public MessageUpdaterTask(InfoHUD pluginInstance) {
+	public MessageUpdaterTask(InfoHUD pluginInstance, int taskMessageUpdateDelay) {
 		this.pluginInstance = pluginInstance;
 		this.configManager = pluginInstance.getConfigManager();
+		this.taskMessageUpdateDelay = taskMessageUpdateDelay;
 	}
 
 	/** @return How many ticks between each message update. */
@@ -44,7 +47,7 @@ public class MessageUpdaterTask implements Runnable {
 		for (Player p : pluginInstance.getServer().getOnlinePlayers()) {
 
 			//Skip players that are not on the list
-			if (!configManager.updateAndGetEnabled(p)) {
+			if (!configManager.updateAndGetEnabled(p, taskMessageUpdateDelay)) {
 				continue;
 			}
 

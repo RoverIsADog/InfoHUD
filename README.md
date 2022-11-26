@@ -2,7 +2,7 @@
 
 ## InfoHUD
 Display coordinates and time to the player's action bar. All the functionality of <a href="https://vanillatweaks.net/picker/datapacks/.">Coordinates HUD</a> and more! \
-Version 1.5, compatible with Craftbukkit/Spigot/Paper 1.8+. Compiled using Spigot 1.9.4 and java 11.
+Version 1.5.1, compatible with Craftbukkit/Spigot/Paper 1.8+. Compiled using Spigot 1.9.4 and java 11.
 
 ### Download & Installation
 

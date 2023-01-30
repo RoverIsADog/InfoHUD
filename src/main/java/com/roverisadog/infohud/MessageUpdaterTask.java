@@ -1,5 +1,7 @@
 package com.roverisadog.infohud;
 
+import java.util.*;
+
 import com.roverisadog.infohud.config.*;
 import com.roverisadog.infohud.message.ActionBarSender;
 import org.bukkit.Bukkit;
@@ -83,59 +85,29 @@ public class MessageUpdaterTask implements Runnable {
 				color2 = dark2;
 			}
 
-			//Coordinates enabled
+			List<String> fields = new ArrayList<>();
 			if (cfg.getCoordMode() == CoordMode.ENABLED) {
-				switch (cfg.getTimeMode()) {
-					case DISABLED:
-						sendToActionBar(p, color1 + "XYZ: "
-								+ color2 + CoordMode.getCoordinates(p) + " "
-								+ color1 + getPlayerDirection(p));
-						break;
-					case CURRENT_TICK:
-						sendToActionBar(p, color1 + "XYZ: "
-								+ color2 + CoordMode.getCoordinates(p) + " "
-								+ color1 + String.format("%-10s", getPlayerDirection(p))
-								+ color2 + TimeMode.getTimeTicks(p));
-						break;
-					case CLOCK24:
-						sendToActionBar(p, color1 + "XYZ: "
-								+ color2 + CoordMode.getCoordinates(p) + " "
-								+ color1 + String.format("%-10s", getPlayerDirection(p))
-								+ color2 + TimeMode.getTime24(p));
-						break;
-					case CLOCK12:
-						sendToActionBar(p, color1 + "XYZ: "
-								+ color2 + CoordMode.getCoordinates(p) + " "
-								+ color1 + String.format("%-10s", getPlayerDirection(p))
-								+ color2 + TimeMode.getTime12(p, color1, color2));
-						break;
-					case VILLAGER_SCHEDULE:
-						sendToActionBar(p, color1 + "XYZ: "
-								+ color2 + CoordMode.getCoordinates(p) + " "
-								+ color1 + String.format("%-10s", getPlayerDirection(p))
-								+ color2 + TimeMode.getVillagerTime(p, color1, color2));
-						break;
-					default: //Ignored
-				}
+				fields.add(color1 + "XYZ: " + color2 + CoordMode.getCoordinates(p));
+				fields.add(color1 + String.format("%-10s", getPlayerDirection(p)));
+			}
+			switch (cfg.getTimeMode()) {
+				case CURRENT_TICK:
+					fields.add(color2 + TimeMode.getTimeTicks(p));
+					break;
+				case CLOCK24:
+					fields.add(color2 + TimeMode.getTime24(p));
+					break;
+				case CLOCK12:
+					fields.add(color2 + TimeMode.getTime12(p, color1, color2));
+					break;
+				case VILLAGER_SCHEDULE:
+					fields.add(color2 + TimeMode.getVillagerTime(p, color1, color2));
+					break;
 			}
 
-			//Coordinates disabled
-			else if (cfg.getCoordMode() == CoordMode.DISABLED) {
-				switch (cfg.getTimeMode()) {
-					case CURRENT_TICK:
-						sendToActionBar(p, color2 + TimeMode.getTimeTicks(p));
-						break;
-					case CLOCK12:
-						sendToActionBar(p, color2 + TimeMode.getTime12(p, color1, color2));
-						break;
-					case CLOCK24:
-						sendToActionBar(p, color2 + TimeMode.getTime24(p));
-						break;
-					case VILLAGER_SCHEDULE:
-						sendToActionBar(p, color2 + TimeMode.getVillagerTime(p, color1, color2));
-						break;
-					default: //Ignored
-				}
+			String msg = String.join(" ", fields).trim();
+			if (!msg.isEmpty()) {
+				sendToActionBar(p, msg);
 			}
 		}
 		benchmark = System.nanoTime() - benchmarkStart;

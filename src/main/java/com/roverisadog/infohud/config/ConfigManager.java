@@ -160,6 +160,34 @@ public class ConfigManager {
 		return true;
 	}
 
+	/* ---------------------------------- Direction Mode ---------------------------------- */
+
+	/**
+	 * Gets the direction display setting for a player.
+	 * @param p Concerned player
+	 * @return Direction display setting
+	 */
+	public DirectionMode getDirectionMode(Player p) {
+		return playerMap.get(p.getUniqueId()).getDirectionMode();
+	}
+
+	/**
+	 * Changes the direction display setting for a player and writes changes to file.
+	 * @param p Concerned player.
+	 * @param newMode New direction display setting.
+	 * @return True if successful.
+	 */
+	public synchronized boolean setDirectionMode(Player p, DirectionMode newMode) {
+		if (!isEnabled(p)) return false;
+		playerMap.get(p.getUniqueId()).setDirectionMode(newMode);
+
+		// Writes changes into config.yml
+		String playerPath = PLAYER_CFG_PATH + "." + p.getUniqueId();
+		playersConfig.set(playerPath, getCfg(p).toRawMap());
+		savePlayersConfig();
+		return true;
+	}
+
 	/* ---------------------------------- Time Mode ---------------------------------- */
 
 	/**

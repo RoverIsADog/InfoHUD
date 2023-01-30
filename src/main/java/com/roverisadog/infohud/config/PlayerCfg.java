@@ -14,6 +14,8 @@ public class PlayerCfg {
 
 	/** (Persistent) How coordinates should be displayed (enum in case more modes added.) */
 	private CoordMode coordMode;
+	/** (Persistent) Direction mode setting. */
+	private DirectionMode directionMode;
 	/** (Persistent) Format to display the time in. */
 	private TimeMode timeMode;
 	/** (Persistent) Dark mode settings. */
@@ -31,18 +33,20 @@ public class PlayerCfg {
 	 * Constructor that creates default configs for a player:
 	 * <ul>
 	 *     <li>coordinatesMode: enabled</li>
+	 *     <li>directionMode: simple</li>
 	 *     <li>timeMode: clock24</li>
 	 *     <li>darkMode: auto</li>
 	 * </ul>
 	 * @param id UUID of the player.
 	 */
 	protected PlayerCfg(UUID id) {
-		this(id, CoordMode.ENABLED, TimeMode.CLOCK24, DarkMode.AUTO);
+		this(id, CoordMode.ENABLED, DirectionMode.SIMPLE, TimeMode.CLOCK24, DarkMode.AUTO);
 	}
 
-	protected PlayerCfg(UUID id, CoordMode coordMode, TimeMode timeMode, DarkMode darkMode) {
+	protected PlayerCfg(UUID id, CoordMode coordMode, DirectionMode directionMode, TimeMode timeMode, DarkMode darkMode) {
 		this.id = id;
 		this.coordMode = coordMode;
+		this.directionMode = directionMode;
 		this.timeMode = timeMode;
 		this.darkMode = darkMode;
 	}
@@ -57,6 +61,14 @@ public class PlayerCfg {
 
 	public synchronized void setCoordMode(CoordMode coordMode) {
 		this.coordMode = coordMode;
+	}
+
+	public DirectionMode getDirectionMode() {
+		return directionMode;
+	}
+
+	public synchronized void setDirectionMode(DirectionMode directionMode) {
+		this.directionMode = directionMode;
 	}
 
 	public TimeMode getTimeMode() {
@@ -106,6 +118,7 @@ public class PlayerCfg {
 	protected Map<String, Object> toRawMap() {
 		Map<String, Object> tmp = new HashMap<>();
 		tmp.put(CoordMode.cfgKey, coordMode.toString());
+		tmp.put(DirectionMode.cfgKey, directionMode.toString());
 		tmp.put(TimeMode.cfgKey, timeMode.toString());
 		tmp.put(DarkMode.cfgKey, darkMode.toString());
 		return tmp;
@@ -121,23 +134,26 @@ public class PlayerCfg {
 	public static PlayerCfg fromRawMap(UUID id, Map<String, Object> map) {
 
 		CoordMode coordMode;
+		DirectionMode directionMode;
 		TimeMode timeMode;
 		DarkMode darkMode;
 
 		//Is from a version before InfoHUD 1.2 (Stored as int)
 		if (map.get(CoordMode.cfgKey) instanceof Integer) {
 			coordMode = CoordMode.get((int) map.get(CoordMode.cfgKey));
+			directionMode = DirectionMode.SIMPLE;
 			timeMode = TimeMode.get((int) map.get(TimeMode.cfgKey));
 			darkMode = DarkMode.get((int) map.get(DarkMode.cfgKey));
 		}
 		//Is from newer versions (stored as String)
 		else {
 			coordMode = CoordMode.get((String) map.get(CoordMode.cfgKey));
+			directionMode = DirectionMode.get((String) map.getOrDefault(DirectionMode.cfgKey, DirectionMode.SIMPLE.name));
 			timeMode = TimeMode.get((String) map.get(TimeMode.cfgKey));
 			darkMode = DarkMode.get((String) map.get(DarkMode.cfgKey));
 		}
 
-		return new PlayerCfg(id, coordMode, timeMode, darkMode);
+		return new PlayerCfg(id, coordMode, directionMode, timeMode, darkMode);
 	}
 
 }

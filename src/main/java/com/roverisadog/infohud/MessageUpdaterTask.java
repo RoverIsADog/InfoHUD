@@ -57,7 +57,7 @@ public class MessageUpdaterTask implements Runnable {
 
 			PlayerCfg cfg = configManager.getCfg(p);
 
-			if (cfg.getCoordMode() == CoordMode.DISABLED && cfg.getTimeMode() == TimeMode.DISABLED) {
+			if (cfg.getCoordMode() == CoordMode.DISABLED && cfg.getDirectionMode() == DirectionMode.DISABLED && cfg.getTimeMode() == TimeMode.DISABLED) {
 				configManager.removePlayer(p);
 				continue;
 			}
@@ -88,7 +88,13 @@ public class MessageUpdaterTask implements Runnable {
 			List<String> fields = new ArrayList<>();
 			if (cfg.getCoordMode() == CoordMode.ENABLED) {
 				fields.add(color1 + "XYZ: " + color2 + CoordMode.getCoordinates(p));
-				fields.add(color1 + String.format("%-10s", getPlayerDirection(p)));
+			}
+			switch (cfg.getDirectionMode()) {
+				case DETAILED:
+					fields.add(color2 + DirectionMode.getAngularDirection(p));
+				case SIMPLE:
+					fields.add(color1 + String.format("%-10s", DirectionMode.getCardinalDirection(p)));
+					break;
 			}
 			switch (cfg.getTimeMode()) {
 				case CURRENT_TICK:
@@ -112,35 +118,6 @@ public class MessageUpdaterTask implements Runnable {
 		}
 		benchmark = System.nanoTime() - benchmarkStart;
 	}
-
-	/**
-	 * Calculates cardinal direction the player is facing.
-	 * @return Small message indicating cardinal direction and coordinate
-	 *         towards which the player is facing.
-	 */
-	private static String getPlayerDirection(Player player) {
-		//-180: Leaning left | +180: Leaning right
-		float yaw = player.getLocation().getYaw();
-		//Bring to 360 degrees (Clockwise from -X axis)
-		if (yaw < 0.0F) {
-			yaw += 360.0F;
-		}
-		//Separate into 8 sectors (Arc: 45deg), offset by 1/2 sector (Arc: 22.5deg)
-		int sector = (int) ((yaw + 22.5F) / 45F);
-		switch (sector) {
-			case 1: return "SW";
-			case 2: return "W [-X]";
-			case 3: return "NW";
-			case 4: return "N [-Z]";
-			case 5: return "NE";
-			case 6: return "E [+X]";
-			case 7: return "SE";
-			case 0:
-			default: //Example: (359 + 22.5)/45
-				return "S [+Z]";
-		}
-	}
-
 
 	/**
 	 * Sends a message to a player's actionbar using {@link ActionBarSender}

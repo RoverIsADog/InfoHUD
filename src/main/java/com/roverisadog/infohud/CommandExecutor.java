@@ -19,7 +19,7 @@ public class CommandExecutor implements TabExecutor {
 	static final String CMD_NAME = "infohud";
 	/** Commands available for normal users. */
 	private static final List<String> CMD_NORMAL =
-			Arrays.asList("enable", "disable", CoordMode.cmdName, TimeMode.cmdName, DarkMode.cmdName, "help");
+			Arrays.asList("enable", "disable", CoordMode.cmdName, DirectionMode.cmdName, TimeMode.cmdName, DarkMode.cmdName, "help");
 	/** Commands available exclusively to admins. */
 	private static final List<String> CMD_ADMIN =
 			Arrays.asList("messageUpdateDelay", "reload", "benchmark", "brightBiomes");
@@ -105,7 +105,7 @@ public class CommandExecutor implements TabExecutor {
 			int currentLevel = 1;
 
 			// [/infohud help]
-			if (argument1.equalsIgnoreCase(CMD_NORMAL.get(5))) {
+			if (argument1.equalsIgnoreCase(CMD_NORMAL.get(6))) {
 				buildAndSendHelpMenu(sender);
 			}
 
@@ -140,6 +140,10 @@ public class CommandExecutor implements TabExecutor {
 					// [/infohud coordinates]
 					else if (argument1.equalsIgnoreCase(CoordMode.cmdName)) {
 						changeCoordMode(p, args, currentLevel);
+					}
+					// [/infohud direction]
+					else if (argument1.equalsIgnoreCase(DirectionMode.cmdName)) {
+						changeDirectionMode(p, args, currentLevel);
 					}
 					// [/infohud time]
 					else if (argument1.equalsIgnoreCase(TimeMode.cmdName)) {
@@ -227,6 +231,10 @@ public class CommandExecutor implements TabExecutor {
 				if (argument1.equalsIgnoreCase(CoordMode.cmdName)) {
 					return StringUtil.copyPartialMatches(argument2, CoordMode.OPTIONS_LIST, new ArrayList<>());
 				}
+				//"direction"
+				else if (argument1.equalsIgnoreCase(DirectionMode.cmdName)) {
+					return StringUtil.copyPartialMatches(argument2, DirectionMode.OPTIONS_LIST, new ArrayList<>());
+				}
 				//"time"
 				else if (argument1.equalsIgnoreCase(TimeMode.cmdName)) {
 					return StringUtil.copyPartialMatches(argument2, TimeMode.OPTIONS_LIST, new ArrayList<>());
@@ -303,6 +311,35 @@ public class CommandExecutor implements TabExecutor {
 		// Unrecognised argument
 		Util.sendMsg(p, "Usage: " + Util.HLT + "'/" +
 				CMD_NAME + " " + CoordMode.cmdName + " " + Arrays.toString(CoordMode.values()));
+	}
+
+	/**
+	 * Changes the direction mode of a player.
+	 * @param p Concerned player.
+	 * @param args Arguments list.
+	 * @param argStart Commands before argStart have been consumed.
+	 */
+	private void changeDirectionMode(Player p, String[] args, int argStart) {
+		// No argument
+		if (args.length < argStart + 1) {
+			Util.sendMsg(p, "Direction display is currently set to: " + Util.HLT + pluginInstance.getConfigManager().getDirectionMode(p));
+			return;
+		}
+
+		//Cycle through all direction modes
+		for (DirectionMode dm : DirectionMode.values()) {
+			if (dm.name.equalsIgnoreCase(args[argStart])) {
+				if (pluginInstance.getConfigManager().setDirectionMode(p, dm))
+					Util.sendMsg(p, "Direction display set to: " + Util.HLT + dm.description + Util.RES + ".");
+				else
+					Util.sendMsg(p, Util.ERR + "Error while changing direction display mode");
+				return;
+			}
+		}
+
+		// Unrecognised argument
+		Util.sendMsg(p, "Usage: " + Util.HLT + "'/" +
+				CMD_NAME + " " + DirectionMode.cmdName + " " + Arrays.toString(DirectionMode.values()));
 	}
 
 	/**
@@ -566,6 +603,7 @@ public class CommandExecutor implements TabExecutor {
 			if (pluginInstance.getConfigManager().isEnabled(p)) {
 				PlayerCfg cfg = pluginInstance.getConfigManager().getCfg(p);
 				msg.add(Util.HLT + "   coordinates: " + Util.RES + cfg.getCoordMode().description);
+				msg.add(Util.HLT + "   direction: " + Util.RES + cfg.getDirectionMode().description);
 				msg.add(Util.HLT + "   time: " + Util.RES + cfg.getTimeMode().description);
 				msg.add(Util.HLT + "   darkMode: " + Util.RES + cfg.getDarkMode().description);
 			}
@@ -576,6 +614,7 @@ public class CommandExecutor implements TabExecutor {
 		msg.add(Util.GRN + "Settings");
 		if (sender instanceof Player) {
 			msg.add(Util.HLT + ">coordinates: " + Util.RES + "Enable/Disable coordinates display.");
+			msg.add(Util.HLT + ">direction: " + Util.RES + "Enable/Disable direction display.");
 			msg.add(Util.HLT + ">time: " + Util.RES + "Time display format (or disable).");
 			msg.add(Util.HLT + ">darkMode: " + Util.RES + "Enable/Disable/Auto using lighter colors.");
 		}

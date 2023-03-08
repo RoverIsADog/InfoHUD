@@ -221,8 +221,10 @@ public class ConfigManager {
 	 * @param p The player.
 	 * @param time Ticks to stop for.
 	 */
-	public void pauseFor(Player p, int time) {
-		playerMap.get(p.getUniqueId()).pauseFor(time);
+	public synchronized void pauseFor(Player p, int time) {
+		if (isEnabled(p)) {
+			playerMap.get(p.getUniqueId()).pauseFor(time);
+		}
 	}
 
 	/**
@@ -230,7 +232,10 @@ public class ConfigManager {
 	 * @param time Ticks to stop for.
 	 */
 	public synchronized void pauseFor(int time) {
-		playerMap.forEach((uuid, playerCfg) -> playerCfg.pauseFor(time));
+		playerMap.forEach((uuid, playerCfg) -> {
+			// Includes offline players, but it's not worth checking
+			playerCfg.pauseFor(time);
+		});
 	}
 
 
@@ -252,6 +257,19 @@ public class ConfigManager {
 		// Update config file if applicable.
 		if (isOldFileRevision()) {
 			updateConfigFile();
+		}
+
+		// Now, config format is modern, but we'll still update version
+		String ver = pluginInstance.getDescription().getVersion();
+		String cfgVer = pluginConfig.getString(ConfigManager.VERSION_PATH);
+		String playerVer = playersConfig.getString(ConfigManager.VERSION_PATH);
+		if (!ver.equals(cfgVer)) {
+			pluginConfig.set(ConfigManager.VERSION_PATH, ver);
+			pluginInstance.saveConfig();
+		}
+		if (!ver.equals(playerVer)) {
+			playersConfig.set(ConfigManager.VERSION_PATH, ver);
+			savePlayersConfig();
 		}
 
 		// Load the message update delay [config.yml/"messageUpdateDelay"]

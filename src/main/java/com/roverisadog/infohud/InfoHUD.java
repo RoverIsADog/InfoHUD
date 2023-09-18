@@ -178,12 +178,14 @@ public class InfoHUD extends JavaPlugin {
 					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
 				else if (apiVersion < 19) // 1.18
 					actionBarSender = new ActionBarSenderNMS1_18(versionStr);
-				else // 1.19+
+				else if (apiVersion < 20) // 1.19
 					actionBarSender = new ActionBarSenderNMS1_19(versionStr);
+				else // 1.20+
+					actionBarSender = new ActionBarSenderNMS1_20(versionStr);
 
 			} catch (Exception | Error e) { // Reflection error
-				Util.printToTerminal(Util.ERR + "Exception while initializing packets with" +
-						"NMS v1." + versionStr + ". Version may be incompatible.");
+				Util.printToTerminal(Util.ERR + "Exception while initializing packets with " +
+						"NMS " + versionStr + ". Version may be incompatible.");
 				e.printStackTrace();
 				return false;
 			}

@@ -7,9 +7,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * NMS for sending messages to the actionbar, for 1.19
+ * NMS for sending messages to the actionbar, for 1.20+
  */
-public class ActionBarSenderNMS1_19 implements ActionBarSender {
+public class ActionBarSenderNMS1_20 implements ActionBarSender {
 
 	private final Class<?> playerClass;
 	private final Method getHandleMethod;
@@ -24,7 +24,7 @@ public class ActionBarSenderNMS1_19 implements ActionBarSender {
 	 * @param versionStr Internal string for the server version.
 	 * @throws Exception Reflection errors or otherwise.
 	 */
-	public ActionBarSenderNMS1_19(String versionStr) throws Exception {
+	public ActionBarSenderNMS1_20(String versionStr) throws Exception {
 		String nmsPath = "net.minecraft.network.";
 
 		/* --------------------------------- Player Related --------------------------------- */
@@ -37,7 +37,7 @@ public class ActionBarSenderNMS1_19 implements ActionBarSender {
 
 		// p.getHandle().playerConnection.sendPacket(ppoc);
 		getHandleMethod = playerClass.getMethod("getHandle");
-		playerConnectionField = getHandleMethod.getReturnType().getField("b");
+		playerConnectionField = getHandleMethod.getReturnType().getField("c"); // Changed to c as of 1.20
 		sendPacketMethod = playerConnectionField.getType().getMethod("a", packetClass);
 
 		/* --------------------------------- Packet Related --------------------------------- */

@@ -2,7 +2,10 @@
 
 ## InfoHUD
 Display coordinates and time to the player's action bar. All the functionality of <a href="https://vanillatweaks.net/picker/datapacks/.">Coordinates HUD</a> and more! \
-Version 1.5.1, compatible with Craftbukkit/Spigot/Paper 1.8+. Compiled using Spigot 1.9.4 and java 11.
+
+Compatible with Craftbukkit/Spigot/Paper 1.8+, although craftbukkit versions will probably stop working each update because of NMS changes.
+
+Compiled using Spigot 1.9.4 and openjdk 19.
 
 ### Download & Installation
 
@@ -83,3 +86,11 @@ playerConfig:
 
 ## See also
 This plugin is inspired by the excellent CoordinatesHUD datapack. Find it at https://vanillatweaks.net/picker/datapacks/.
+
+## Compiling
+Requires a JDK and Maven on your system. In the project's root directory run:
+```sh
+mvn package
+```
+
+The compiled jar will be in `target/`

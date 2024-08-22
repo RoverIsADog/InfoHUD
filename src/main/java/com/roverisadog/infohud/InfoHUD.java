@@ -63,9 +63,15 @@ public class InfoHUD extends JavaPlugin {
 
 			//Version check eg: org.bukkit.craftbukkit.v1_16_R2.blabla
 			String ver = Bukkit.getServer().getClass().getPackage().getName();
-			versionStr = ver.split("\\.")[3]; //v1_16_R2
-			apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
-			serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
+			if(ver.equals("org.bukkit.craftbukkit")) {
+				//Paper/spigot 1.20.5+ changes the package name to always be org.bukkit.craftbukkit
+				apiVersion = 20;
+				serverVendor = "unknown";
+			} else {
+				versionStr = ver.split("\\.")[3]; //v1_16_R2
+				apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
+				serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
+			}
 			isSpigot = isSpigot();
 
 //			Util.printToTerminal("versionStr: %s, apiVersion: %s, serverVendor: %s"

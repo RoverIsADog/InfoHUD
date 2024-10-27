@@ -5,10 +5,11 @@ Display coordinates and time to the player's action bar. All the functionality o
 
 Compatible with Craftbukkit/Spigot/Paper 1.8+, although craftbukkit versions will probably stop working each update because of NMS changes.
 
-Compiled using Spigot 1.9.4 and openjdk 19.
+Compiled against Spigot 1.9.4 and JDK 11. Does not support CraftBukkit after 1.20.1, please use Spigot, Paper, etc.
 
 ### Download & Installation
 
+<a href="https://modrinth.com/plugin/info-hud">Download on Modrinth</a> \
 <a href="https://dev.bukkit.org/projects/infohud">Download on curseforge</a> \
 <a href="https://www.spigotmc.org/resources/infohud.83844/">Download on spigotmc</a>
 

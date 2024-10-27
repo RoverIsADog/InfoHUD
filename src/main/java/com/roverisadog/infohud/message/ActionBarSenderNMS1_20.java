@@ -7,7 +7,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 /**
- * NMS for sending messages to the actionbar, for 1.20+
+ * NMS for sending messages to the actionbar, for 1.20.1
+ * Does NOT work for 1.20.2-1.20.4 but also does not crash
+ * Fails to init 1.20.6+
  */
 public class ActionBarSenderNMS1_20 implements ActionBarSender {
 

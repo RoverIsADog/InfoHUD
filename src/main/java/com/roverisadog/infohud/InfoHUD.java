@@ -35,7 +35,6 @@ public class InfoHUD extends JavaPlugin {
 	private boolean isSpigot;
 
 	//Version for reflection
-	private String versionStr;
 	public static ActionBarSender actionBarSender;
 
 	// Tasks
@@ -62,17 +61,11 @@ public class InfoHUD extends JavaPlugin {
 			}
 
 			//Version check eg: org.bukkit.craftbukkit.v1_16_R2.blabla
-			String ver = Bukkit.getServer().getClass().getPackage().getName();
-			if(ver.equals("org.bukkit.craftbukkit")) {
-				//Paper/spigot 1.20.5+ changes the package name to always be org.bukkit.craftbukkit
-				apiVersion = 20;
-				serverVendor = "unknown";
-			} else {
-				versionStr = ver.split("\\.")[3]; //v1_16_R2
-				apiVersion = Integer.parseInt(versionStr.split("_")[1]); //16
-				serverVendor = ver.split("\\.")[2]; //craftbukkit/spigot/paper
-			}
-			isSpigot = isSpigot();
+			String bukkitVer = Bukkit.getServer().getBukkitVersion(); // 1.16.2-R0.1-SNAPSHOT
+			String mcVer = bukkitVer.split("-")[0]; //[1.16.2]
+			apiVersion = Integer.parseInt(mcVer.split("\\.")[1]); // 16
+
+			isSpigot = isSpigot(); // AKA can avoid using NMS
 
 //			Util.printToTerminal("versionStr: %s, apiVersion: %s, serverVendor: %s"
 //					, versionStr, Util.apiVersion, Util.serverVendor);
@@ -173,25 +166,44 @@ public class InfoHUD extends JavaPlugin {
 		else {
 			Util.printToTerminal(Util.GRN + "Spigot API unavailable or incompatible:" +
 					"falling back to NMS");
+
+			/* Get the CraftBukkit package name using reflection for use with each ActionBarSenders
+			This operation fails on PaperMC 1.20.5+, but this is ok since the versionStr isn't used
+			with Paper since Paper supports Spigot API.
+			https://forums.papermc.io/threads/important-dev-psa-future-removal-of-cb-package-relocation.1106/
+			 */
+
+			String nmsVersionStr = "";
+			try {
+				String ver = Bukkit.getServer().getClass().getPackage().getName();
+				nmsVersionStr = ver.split("\\.")[3]; // v1_16_R2
+			} catch (IndexOutOfBoundsException e) {
+				//ignored
+			}
+
 			try {
 				if (apiVersion < 12) // 1.8 - 1.11
-					actionBarSender = new ActionBarSenderNMS1_8(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_8(nmsVersionStr);
 				else if (apiVersion < 16) // 1.12 - 1.15
-					actionBarSender = new ActionBarSenderNMS1_12(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_12(nmsVersionStr);
 				else if (apiVersion < 17) // 1.16
-					actionBarSender = new ActionBarSenderNMS1_16(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_16(nmsVersionStr);
 				else if (apiVersion < 18) // 1.17
-					actionBarSender = new ActionBarSenderNMS1_17(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_17(nmsVersionStr);
 				else if (apiVersion < 19) // 1.18
-					actionBarSender = new ActionBarSenderNMS1_18(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_18(nmsVersionStr);
 				else if (apiVersion < 20) // 1.19
-					actionBarSender = new ActionBarSenderNMS1_19(versionStr);
-				else // 1.20+
-					actionBarSender = new ActionBarSenderNMS1_20(versionStr);
+					actionBarSender = new ActionBarSenderNMS1_19(nmsVersionStr);
+				else // 1.20.1 - 1.20.4
+					actionBarSender = new ActionBarSenderNMS1_20(nmsVersionStr);
+
+				//Broken without crash 1.20.2 onward (nothing sent to actionbar)
+				//Broken with crash 1.20.4 onward (plugin doesn't init)
+
 
 			} catch (Exception | Error e) { // Reflection error
 				Util.printToTerminal(Util.ERR + "Exception while initializing packets with " +
-						"NMS " + versionStr + ". Version may be incompatible.");
+						"NMS " + nmsVersionStr + ". Version may be incompatible.");
 				e.printStackTrace();
 				return false;
 			}
